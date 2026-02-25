@@ -3,8 +3,9 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getSession } from "@/server/better-auth/server";
 import { SectionHeader } from "@/components/shared/SectionHeader";
-import { ChevronRight, Grid2X2 } from "lucide-react";
+import { ChevronRight, Grid2X2, Target } from "lucide-react";
 import Link from "next/link";
+import { LogoutButton } from "@/components/shared/LogoutButton";
 
 /**
  * Profile page - basic implementation showing user info.
@@ -26,7 +27,7 @@ export default async function ProfilePage() {
   return (
     <AppShell>
       <PageHeader title="Profil" />
-      <div className="animate-in fade-in slide-in-from-bottom-2 duration-200 px-5 pb-28">
+      <div className="px-5 pb-28">
         {/* User Card */}
         <div className="mt-2 flex flex-col items-center gap-4 py-6">
           <Avatar className="h-20 w-20 bg-primary/10">
@@ -57,6 +58,28 @@ export default async function ProfilePage() {
               </div>
               <ChevronRight size={16} className="text-muted-foreground/50 flex-shrink-0" />
             </Link>
+
+            <Link
+              href="/goals"
+              className="flex items-center gap-4 rounded-2xl bg-card p-4 transition-colors active:bg-muted/50"
+            >
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Target size={20} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-foreground">Tujuan Finansial</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Kelola target tabungan Anda</p>
+              </div>
+              <ChevronRight size={16} className="text-muted-foreground/50 flex-shrink-0" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Logout */}
+        <div className="mt-6">
+          <SectionHeader title="Akun" />
+          <div className="mt-2">
+            <LogoutButton />
           </div>
         </div>
       </div>

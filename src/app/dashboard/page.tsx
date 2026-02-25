@@ -1,15 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { AppShell } from "@/components/shared/AppShell";
-import { FAB } from "@/components/shared/FAB";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { BalanceHeroCard } from "@/components/dashboard/BalanceHeroCard";
 import { SummaryCards } from "@/components/dashboard/SummaryCards";
 import { WalletScroll } from "@/components/dashboard/WalletScroll";
 import { TrendChart } from "@/components/dashboard/TrendChart";
 import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
-import { AddTransactionSheet } from "@/components/transaction/AddTransactionSheet";
 import { useActiveWorkspace } from "@/components/providers/workspace-provider";
 import { authClient } from "@/server/better-auth/client";
 import { api } from "@/trpc/react";
@@ -19,7 +17,6 @@ import { api } from "@/trpc/react";
  * Shows balance, summary cards, wallets, trends, and recent transactions.
  */
 export default function DashboardPage() {
-  const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
   const { workspaceId } = useActiveWorkspace();
   const { data: session } = authClient.useSession();
 
@@ -157,13 +154,6 @@ export default function DashboardPage() {
           isLoading={transactionsLoading}
         />
       </div>
-
-      <FAB onClick={() => setIsAddTransactionOpen(true)} />
-
-      <AddTransactionSheet
-        open={isAddTransactionOpen}
-        onOpenChange={setIsAddTransactionOpen}
-      />
     </AppShell>
   );
 }
