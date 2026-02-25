@@ -1,4 +1,3 @@
-import { AppShell } from "@/components/shared/AppShell";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getSession } from "@/server/better-auth/server";
@@ -25,9 +24,9 @@ export default async function ProfilePage() {
     .toUpperCase() ?? "??";
 
   return (
-    <AppShell>
+    <>
       <PageHeader title="Profil" />
-      <div className="px-5 pb-28">
+      <div className="px-5 pt-2">
         {/* User Card */}
         <div className="mt-2 flex flex-col items-center gap-4 py-6">
           <Avatar className="h-20 w-20 bg-primary/10">
@@ -83,6 +82,6 @@ export default async function ProfilePage() {
           </div>
         </div>
       </div>
-    </AppShell>
+    </>
   );
 }

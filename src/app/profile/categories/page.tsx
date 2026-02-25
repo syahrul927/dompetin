@@ -23,7 +23,14 @@ export default function CategoriesPage() {
   const { workspaceId } = useActiveWorkspace();
   const [activeTab, setActiveTab] = useState<CategoryType>("expense");
   const [showCreate, setShowCreate] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<any>(null);
+  const [editingCategory, setEditingCategory] = useState<{
+    id: string;
+    name: string;
+    type: string;
+    icon: string;
+    color: string;
+    isSystem?: boolean;
+  } | null>(null);
 
   const { data: categories, isLoading } = api.category.getCategories.useQuery(
     { workspaceId, type: activeTab },
@@ -31,14 +38,14 @@ export default function CategoriesPage() {
   );
 
   return (
-    <AppShell>
+    <>
       <PageHeader
         variant="back"
         title="Kategori"
         onBack={() => router.back()}
       />
 
-      <div className="animate-in fade-in slide-in-from-bottom-2 duration-200 px-5 pb-28 pt-2">
+      <div className="px-5 pt-2">
         {/* Type Toggle */}
         <div className="mb-6 flex rounded-xl bg-muted/50 p-1">
           <button
@@ -113,6 +120,6 @@ export default function CategoriesPage() {
         onOpenChange={(open) => !open && setEditingCategory(null)}
         category={editingCategory}
       />
-    </AppShell>
+    </>
   );
 }

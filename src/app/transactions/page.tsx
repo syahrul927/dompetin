@@ -90,9 +90,9 @@ export default function TransactionsPage() {
   );
 
   return (
-    <AppShell>
+    <>
       <PageHeader title="Transaksi" />
-      <div className="px-5 pb-28">
+      <div className="px-5 pt-2">
         {/* Loading state */}
         {isLoading && (
           <div className="mt-4 space-y-4">
@@ -164,6 +164,6 @@ export default function TransactionsPage() {
           </div>
         )}
       </div>
-    </AppShell>
+    </>
   );
 }

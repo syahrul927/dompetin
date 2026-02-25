@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Wallet, Clock, Target, User, ArrowRightLeft } from "lucide-react";
+import { Home, Wallet, Clock, User, ArrowRightLeft } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const NAV_ITEMS = [
   { label: "Beranda", icon: Home, route: "/dashboard" },
@@ -25,14 +26,25 @@ export function BottomNav() {
           <Link
             key={route}
             href={route}
-            className={`flex min-w-[48px] flex-col items-center justify-center gap-0.5 rounded-full px-2 py-1.5 transition-transform duration-150 active:scale-95 ${
+            className={`flex min-w-[48px] flex-col items-center justify-center gap-0.5 rounded-full px-2 py-1.5 transition-colors duration-150 active:scale-95 ${
               isActive ? "text-primary" : "text-muted-foreground/60"
             }`}
           >
             <Icon size={18} strokeWidth={2.5} />
-            {isActive && (
-              <span className="text-[9px] font-bold">{label}</span>
-            )}
+
+            <AnimatePresence>
+              {isActive && (
+                <motion.span
+                  initial={{ opacity: 0, height: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, height: "auto", scale: 1 }}
+                  exit={{ opacity: 0, height: 0, scale: 0.8 }}
+                  transition={{ duration: 0.2 }}
+                  className="text-[9px] font-bold overflow-hidden"
+                >
+                  {label}
+                </motion.span>
+              )}
+            </AnimatePresence>
           </Link>
         );
       })}

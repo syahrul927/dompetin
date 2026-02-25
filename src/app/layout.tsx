@@ -11,6 +11,7 @@ import { OfflineIndicator } from "@/components/pwa/offline-indicator";
 import { registerServiceWorker } from "@/lib/pwa/service-worker-registration";
 
 import { WorkspaceProvider } from "@/components/providers/workspace-provider";
+import { AppShell } from "@/components/shared/AppShell";
 
 export const metadata: Metadata = {
   title: "Dompetin - Personal Finance Management",
@@ -72,8 +73,10 @@ export default function RootLayout({
       <body>
         <TRPCReactProvider>
           <WorkspaceProvider>
-            {children}
-            <OfflineIndicator />
+            <AppShell>
+              {children}
+              <OfflineIndicator />
+            </AppShell>
           </WorkspaceProvider>
         </TRPCReactProvider>
       </body>

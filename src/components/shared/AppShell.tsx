@@ -2,10 +2,10 @@
 
 import React, { useState } from "react";
 import { usePathname } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { BottomNav } from "./BottomNav";
 import { FAB } from "./FAB";
 import { AddTransactionSheet } from "../transaction/AddTransactionSheet";
-import { AppTransition } from "./AppTransition";
 
 const HIDDEN_ROUTES = ["/login", "/register", "/onboarding"];
 
@@ -28,8 +28,19 @@ export function AppShell({ children }: AppShellProps) {
     <div className="bg-background min-h-screen">
       <div className="relative mx-auto min-h-screen max-w-lg">
         {/* We keep the inner div scrollable */}
-        <div className="scrollbar-hide overflow-y-auto pb-28">
-          <AppTransition>{children}</AppTransition>
+        <div className={`scrollbar-hide overflow-y-auto ${isHidden ? "" : "pb-28"}`}>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={pathname}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="min-h-screen"
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
         </div>
 
         {!isHidden && (

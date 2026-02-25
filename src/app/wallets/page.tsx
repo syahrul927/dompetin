@@ -36,7 +36,7 @@ export default function WalletsPage() {
   const isLoading = workspaceLoading || walletsLoading;
 
   return (
-    <AppShell>
+    <>
       <PageHeader
         title="Dompet"
         rightSlot={
@@ -45,7 +45,7 @@ export default function WalletsPage() {
           </span>
         }
       />
-      <div className="space-y-3 px-5 pb-28">
+      <div className="space-y-3 px-5 pt-2">
         {/* Loading State */}
         {isLoading &&
           Array.from({ length: 3 }).map((_, i) => (
@@ -102,6 +102,6 @@ export default function WalletsPage() {
           workspaceId={workspace.id}
         />
       )}
-    </AppShell>
+    </>
   );
 }

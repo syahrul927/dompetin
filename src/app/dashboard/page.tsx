@@ -111,12 +111,11 @@ export default function DashboardPage() {
     }) ?? [];
 
   return (
-    <AppShell>
-      <div className="space-y-6 px-5 pb-28 pt-6">
-        <DashboardHeader
-          workspace={
-            workspaceData
-              ? { name: workspaceData.name, icon: workspaceData.icon }
+    <div className="space-y-6 px-5 pt-6">
+      <DashboardHeader
+        workspace={
+          workspaceData
+            ? { name: workspaceData.name, icon: workspaceData.icon }
               : null
           }
           user={
@@ -154,6 +153,5 @@ export default function DashboardPage() {
           isLoading={transactionsLoading}
         />
       </div>
-    </AppShell>
   );
 }
