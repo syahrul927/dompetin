@@ -33,13 +33,9 @@ export function AppShell({ children }: AppShellProps) {
         </div>
 
         {!isHidden && (
-          <div className="fixed bottom-5 left-1/2 z-50 flex w-full max-w-lg -translate-x-1/2 items-center justify-between px-5">
-            <div className="flex-1" />
-            <div className="flex items-center gap-3">
-              <BottomNav />
-              <FAB onClick={() => setIsAddOpen(true)} />
-            </div>
-            <div className="flex-1" />
+          <div className="fixed bottom-5 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2">
+            <BottomNav />
+            <FAB onClick={() => setIsAddOpen(true)} />
           </div>
         )}
       </div>

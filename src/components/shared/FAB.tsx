@@ -16,9 +16,9 @@ export function FAB({ onClick }: FABProps) {
   return (
     <Button
       onClick={onClick}
-      className="h-[66px] w-[66px] flex-shrink-0 rounded-full bg-primary shadow-[0_4px_16px_rgba(201,120,128,0.4)] transition-transform duration-150 hover:bg-primary active:scale-[0.93]"
+      className="h-[52px] w-[52px] flex-shrink-0 rounded-full bg-primary shadow-[0_4px_16px_rgba(201,120,128,0.4)] transition-transform duration-150 hover:bg-primary active:scale-[0.93]"
     >
-      <Plus size={26} className="stroke-[2.5] text-white" />
+      <Plus size={22} className="stroke-[2.5] text-white" />
     </Button>
   );
 }
