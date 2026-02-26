@@ -11,6 +11,7 @@ import { OfflineIndicator } from "@/components/pwa/offline-indicator";
 import { registerServiceWorker } from "@/lib/pwa/service-worker-registration";
 
 import { WorkspaceProvider } from "@/components/providers/workspace-provider";
+import { ThemeProvider } from "@/components/providers/theme-provider";
 import { AppShell } from "@/components/shared/AppShell";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
 
@@ -60,7 +61,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${fontSans.variable}`}>
+    <html lang="en" className={`${fontSans.variable}`} suppressHydrationWarning>
       <head>
         {/* PWA Meta Tags */}
         <meta name="application-name" content="Dompetin" />
@@ -72,15 +73,22 @@ export default function RootLayout({
         <meta name="theme-color" content="#000000" />
       </head>
       <body>
-        <TRPCReactProvider>
-          <WorkspaceProvider>
-            <AppShell>
-              {children}
-              <InstallPrompt />
-              <OfflineIndicator />
-            </AppShell>
-          </WorkspaceProvider>
-        </TRPCReactProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <TRPCReactProvider>
+            <WorkspaceProvider>
+              <AppShell>
+                {children}
+                <InstallPrompt />
+                <OfflineIndicator />
+              </AppShell>
+            </WorkspaceProvider>
+          </TRPCReactProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

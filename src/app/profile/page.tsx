@@ -4,6 +4,7 @@ import { getSession } from "@/server/better-auth/server";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 import { ChevronRight, Grid2X2, Target, Mail } from "lucide-react";
 import Link from "next/link";
+import { ThemeToggle } from "@/components/profile/ThemeToggle";
 import { LogoutButton } from "@/components/shared/LogoutButton";
 
 /**
@@ -37,6 +38,14 @@ export default async function ProfilePage() {
           <div className="text-center">
             <h2 className="text-lg font-bold text-foreground">{user.name}</h2>
             <p className="mt-0.5 text-sm font-medium text-muted-foreground">{user.email}</p>
+          </div>
+        </div>
+
+        {/* Appearance */}
+        <div className="mt-6">
+          <SectionHeader title="Tampilan" />
+          <div className="mt-2 rounded-2xl bg-card p-4">
+            <ThemeToggle />
           </div>
         </div>
 
