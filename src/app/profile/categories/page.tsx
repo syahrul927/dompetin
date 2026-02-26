@@ -2,35 +2,21 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AppShell } from "@/components/shared/AppShell";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { useActiveWorkspace } from "@/components/providers/workspace-provider";
 import { api } from "@/trpc/react";
 import { CategoryListItem } from "@/components/categories/CategoryListItem";
-import { CreateCategoryDrawer } from "@/components/categories/CreateCategoryDrawer";
-import { EditCategoryDrawer } from "@/components/categories/EditCategoryDrawer";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import Link from "next/link";
 
 type CategoryType = "expense" | "income";
 
-/**
- * Category management page inside the Profile section.
- */
 export default function CategoriesPage() {
   const router = useRouter();
   const { workspaceId } = useActiveWorkspace();
   const [activeTab, setActiveTab] = useState<CategoryType>("expense");
-  const [showCreate, setShowCreate] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<{
-    id: string;
-    name: string;
-    type: string;
-    icon: string;
-    color: string;
-    isSystem?: boolean;
-  } | null>(null);
 
   const { data: categories, isLoading } = api.category.getCategories.useQuery(
     { workspaceId, type: activeTab },
@@ -94,32 +80,20 @@ export default function CategoriesPage() {
               <CategoryListItem
                 key={cat.id}
                 category={cat}
-                onClick={() => setEditingCategory(cat)}
+                onClick={() => router.push(`/profile/categories/${cat.id}/edit`)}
               />
             ))}
         </div>
 
         {/* Add Button */}
-        <Button
-          onClick={() => setShowCreate(true)}
-          className="mt-6 h-14 w-full rounded-[20px] text-base font-bold shadow-md shadow-primary/20"
-        >
-          <Plus size={20} className="mr-2" />
-          Tambah Kategori
-        </Button>
+        <div className="fixed bottom-0 left-1/2 w-full max-w-lg -translate-x-1/2 bg-background/80 p-5 backdrop-blur-md">
+          <Link href={`/profile/categories/create?type=${activeTab}`}>
+            <Button className="h-14 w-full rounded-full text-base font-bold shadow-md shadow-primary/20">
+              <Plus size={20} className="mr-2" /> Tambah Kategori
+            </Button>
+          </Link>
+        </div>
       </div>
-
-      <CreateCategoryDrawer
-        open={showCreate}
-        onOpenChange={setShowCreate}
-        defaultType={activeTab}
-      />
-
-      <EditCategoryDrawer
-        open={!!editingCategory}
-        onOpenChange={(open) => !open && setEditingCategory(null)}
-        category={editingCategory}
-      />
     </>
   );
 }

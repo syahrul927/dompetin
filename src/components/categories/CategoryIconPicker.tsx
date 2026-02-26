@@ -33,7 +33,7 @@ const CATEGORY_GROUP_LABELS: Record<string, string> = {
 };
 
 /**
- * Nested Drawer for selecting a category icon.
+ * Drawer for selecting a category icon.
  */
 export function CategoryIconPicker({
   value,
@@ -56,7 +56,7 @@ export function CategoryIconPicker({
   });
 
   return (
-    <Drawer nested open={open} onOpenChange={setOpen}>
+    <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>
         <Button
           variant="outline"

@@ -151,6 +151,41 @@ export const categoryRouter = {
     }),
 
   /**
+   * Get a single category by ID
+   */
+  getCategory: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const categoryData = await db.query.category.findFirst({
+        where: eq(categorySchema.id, input.id),
+      });
+
+      if (!categoryData) {
+        throw new Error("Category not found");
+      }
+
+      // Verify access if it's a custom category
+      if (!categoryData.isSystem && categoryData.workspaceId) {
+        const member = await db.query.workspaceMember.findFirst({
+          where: and(
+            eq(workspaceMember.workspaceId, categoryData.workspaceId),
+            eq(workspaceMember.userId, ctx.session.user.id),
+          ),
+        });
+
+        if (!member) {
+          throw new Error("Access denied to this workspace");
+        }
+      }
+
+      return categoryData;
+    }),
+
+  /**
    * Create a new category
    */
   createCategory: protectedProcedure
