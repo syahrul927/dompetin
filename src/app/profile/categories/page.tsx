@@ -31,7 +31,7 @@ export default function CategoriesPage() {
         onBack={() => router.back()}
       />
 
-      <div className="px-5 pt-2">
+      <div className="px-5 pb-36 pt-2">
         {/* Type Toggle */}
         <div className="mb-6 flex rounded-xl bg-muted/50 p-1">
           <button
