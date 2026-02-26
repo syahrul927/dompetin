@@ -120,14 +120,14 @@ export function InstallPrompt() {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 animate-in slide-in-from-bottom-4 duration-300">
-      <div className="bg-background border-border rounded-lg shadow-lg p-4 max-w-sm">
+    <div className="fixed left-1/2 top-4 z-[60] w-[calc(100%-32px)] max-w-lg -translate-x-1/2 animate-in slide-in-from-top-4 duration-300">
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-lg">
         <div className="flex items-start gap-3">
           <div className="flex-1">
-            <h3 className="font-semibold text-sm text-foreground">
+            <h3 className="text-sm font-semibold text-foreground">
               Install Dompetin
             </h3>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="mt-1 text-xs text-muted-foreground">
               {getInstallInstructions(platform)}
             </p>
           </div>
@@ -135,13 +135,13 @@ export function InstallPrompt() {
             <button
               onClick={handleInstallClick}
               disabled={isInstalling}
-              className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex h-9 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isInstalling ? "Installing..." : "Install"}
+              {isInstalling ? "..." : "Install"}
             </button>
             <button
               onClick={handleDismiss}
-              className="inline-flex items-center justify-center rounded-md border border-border bg-background px-2 py-1.5 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              className="inline-flex h-9 items-center justify-center rounded-xl border border-border bg-background px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted focus:outline-none"
             >
               ✕
             </button>

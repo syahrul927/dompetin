@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { useParams } from "next/navigation";
-import { AppShell } from "@/components/shared/AppShell";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { WalletBalanceCard } from "@/components/wallets/WalletBalanceCard";
 import { WalletActions } from "@/components/wallets/WalletActions";

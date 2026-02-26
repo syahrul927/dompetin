@@ -12,6 +12,7 @@ import { registerServiceWorker } from "@/lib/pwa/service-worker-registration";
 
 import { WorkspaceProvider } from "@/components/providers/workspace-provider";
 import { AppShell } from "@/components/shared/AppShell";
+import { InstallPrompt } from "@/components/pwa/install-prompt";
 
 export const metadata: Metadata = {
   title: "Dompetin - Personal Finance Management",
@@ -75,6 +76,7 @@ export default function RootLayout({
           <WorkspaceProvider>
             <AppShell>
               {children}
+              <InstallPrompt />
               <OfflineIndicator />
             </AppShell>
           </WorkspaceProvider>

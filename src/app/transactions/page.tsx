@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { AppShell } from "@/components/shared/AppShell";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card } from "@/components/ui/card";
 import { TransactionRow } from "@/components/shared/TransactionRow";

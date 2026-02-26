@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { AppShell } from "@/components/shared/AppShell";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { WalletListItem } from "@/components/wallets/WalletListItem";
 import { CreateWalletDrawer } from "@/components/wallets/CreateWalletDrawer";
