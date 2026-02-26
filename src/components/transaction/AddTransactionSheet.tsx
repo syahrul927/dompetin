@@ -18,7 +18,16 @@ import { CategorySelectDrawer } from "./CategorySelectDrawer";
 import { useActiveWorkspace } from "@/components/providers/workspace-provider";
 import { api } from "@/trpc/react";
 import { isDefaultCategoryId } from "@/lib/default-categories";
-import { ArrowDown, ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowDown, ArrowLeft, Loader2, CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 interface AddTransactionSheetProps {
   open: boolean;
@@ -316,12 +325,38 @@ export function AddTransactionSheet({
                 {/* Date */}
                 <div className="space-y-1.5">
                   <span className="pl-1 text-xs font-medium text-muted-foreground">Tanggal</span>
-                  <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="flex h-12 w-full items-center justify-between rounded-2xl border border-border bg-muted/50 px-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "flex h-12 w-full items-center justify-start rounded-2xl border-border bg-muted/50 px-4 text-left text-sm font-medium hover:bg-muted/80",
+                          !date && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-3 h-4 w-4 opacity-50" />
+                        {date ? (
+                          format(new Date(date), "dd MMMM yyyy", { locale: idLocale })
+                        ) : (
+                          <span>Pilih tanggal</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={new Date(date)}
+                        onSelect={(newDate) => {
+                          if (newDate) {
+                            // Adjust for local timezone before converting to string
+                            const adjustedDate = new Date(newDate.getTime() - newDate.getTimezoneOffset() * 60000);
+                            setDate(adjustedDate.toISOString().split("T")[0]!);
+                          }
+                        }}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 {/* Note */}

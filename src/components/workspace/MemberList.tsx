@@ -12,7 +12,7 @@ interface Member {
   name: string;
   email: string;
   initials: string;
-  role: "owner" | "member";
+  role: "owner" | "admin" | "member" | "viewer";
 }
 
 interface MemberListProps {
@@ -58,10 +58,12 @@ export function MemberList({ members, isOwner }: MemberListProps) {
             className={`text-[10px] font-medium ${
               member.role === "owner"
                 ? "bg-primary/10 text-primary"
-                : "bg-muted text-muted-foreground"
+                : member.role === "admin"
+                  ? "bg-blue-500/10 text-blue-500"
+                  : "bg-muted text-muted-foreground"
             }`}
           >
-            {member.role === "owner" ? "Pemilik" : "Anggota"}
+            {member.role === "owner" ? "Pemilik" : member.role === "admin" ? "Admin" : member.role === "viewer" ? "Melihat" : "Anggota"}
           </Badge>
 
           {/* Actions (only visible to owner, and not on self) */}
