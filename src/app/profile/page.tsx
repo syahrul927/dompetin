@@ -2,7 +2,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getSession } from "@/server/better-auth/server";
 import { SectionHeader } from "@/components/shared/SectionHeader";
-import { ChevronRight, Grid2X2, Target } from "lucide-react";
+import { ChevronRight, Grid2X2, Target, Mail } from "lucide-react";
 import Link from "next/link";
 import { LogoutButton } from "@/components/shared/LogoutButton";
 
@@ -68,6 +68,19 @@ export default async function ProfilePage() {
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-foreground">Tujuan Finansial</p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">Kelola target tabungan Anda</p>
+              </div>
+              <ChevronRight size={16} className="text-muted-foreground/50 flex-shrink-0" />
+            </Link>
+            <Link
+              href="/profile/invitations"
+              className="flex items-center gap-4 rounded-2xl bg-card p-4 transition-colors active:bg-muted/50"
+            >
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Mail size={20} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-foreground">Undangan Workspace</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Lihat dan kelola undangan masuk</p>
               </div>
               <ChevronRight size={16} className="text-muted-foreground/50 flex-shrink-0" />
             </Link>
