@@ -14,6 +14,7 @@ export const env = createEnv({
     BETTER_AUTH_GOOGLE_CLIENT_ID: z.string(),
     BETTER_AUTH_GOOGLE_CLIENT_SECRET: z.string(),
     DATABASE_URL: z.string().url(),
+    VERCEL_URL: z.string().optional(),
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
@@ -33,6 +34,7 @@ export const env = createEnv({
    * middlewares) or client-side so we need to destruct manually.
    */
   runtimeEnv: {
+    VERCEL_URL: process.env.VERCEL_URL,
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
     BETTER_AUTH_GOOGLE_CLIENT_ID: process.env.BETTER_AUTH_GOOGLE_CLIENT_ID,
     BETTER_AUTH_GOOGLE_CLIENT_SECRET:
