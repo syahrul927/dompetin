@@ -16,8 +16,8 @@ export const auth = betterAuth({
     google: {
       clientId: env.BETTER_AUTH_GOOGLE_CLIENT_ID,
       clientSecret: env.BETTER_AUTH_GOOGLE_CLIENT_SECRET,
-      redirectURI: env.VERCEL_URL
-        ? `https://${env.VERCEL_URL}/api/auth/callback/google`
+      redirectURI: env.VERCEL_PROJECT_PRODUCTION_URL
+        ? `https://${env.VERCEL_PROJECT_PRODUCTION_URL}/api/auth/callback/google`
         : "http://localhost:3000/api/auth/callback/google",
       enabled: true,
     },
