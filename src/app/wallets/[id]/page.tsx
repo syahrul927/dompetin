@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { WalletBalanceCard } from "@/components/wallets/WalletBalanceCard";
 import { WalletActions } from "@/components/wallets/WalletActions";
@@ -26,6 +26,7 @@ const WALLET_TYPE_LABELS: Record<string, string> = {
  */
 export default function WalletDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const walletId = params.id as string;
   const [showTransactionSheet, setShowTransactionSheet] = useState(false);
   const [showEditSheet, setShowEditSheet] = useState(false);
@@ -38,7 +39,7 @@ export default function WalletDetailPage() {
   if (isLoading) {
     return (
       <>
-        <PageHeader variant="back" title="..." />
+        <PageHeader variant="back" title="..." onBack={() => router.back()} />
         <div className="space-y-4 px-5 pt-2">
           <Skeleton className="h-[120px] rounded-[20px]" />
           <Skeleton className="h-[44px] rounded-full" />
@@ -52,7 +53,7 @@ export default function WalletDetailPage() {
   if (!walletData) {
     return (
       <>
-        <PageHeader variant="back" title="Dompet" />
+        <PageHeader variant="back" title="Dompet" onBack={() => router.back()} />
         <div className="flex items-center justify-center py-16">
           <p className="text-muted-foreground">Dompet tidak ditemukan</p>
         </div>
@@ -83,7 +84,7 @@ export default function WalletDetailPage() {
 
   return (
     <>
-      <PageHeader variant="back" title={walletData.name} />
+      <PageHeader variant="back" title={walletData.name} onBack={() => router.back()} />
 
       <div className="space-y-6 px-5 pt-2">
         {/* Balance Card */}
