@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import {
   Drawer,
   DrawerContent,
@@ -30,7 +30,6 @@ export function AddTransactionSheet({
   onOpenChange,
 }: AddTransactionSheetProps) {
   const { workspaceId } = useActiveWorkspace();
-  const dateRef = useRef<HTMLInputElement>(null);
 
   // Step state: "amount" or "details"
   const [step, setStep] = useState<"amount" | "details">("amount");
@@ -164,15 +163,6 @@ export function AddTransactionSheet({
     } catch (error) {
       console.error("Failed to create transaction:", error);
     }
-  };
-
-  const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr + "T00:00:00");
-    return d.toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
   };
 
   /** Dismiss soft keyboard on Enter key */
@@ -324,19 +314,13 @@ export function AddTransactionSheet({
                 )}
 
                 {/* Date */}
-                <div className="relative">
-                  <FormRow
-                    label="Tanggal"
-                    value={formatDate(date)}
-                    onClick={() => dateRef.current?.showPicker()}
-                  />
+                <div className="space-y-1.5">
+                  <span className="pl-1 text-xs font-medium text-muted-foreground">Tanggal</span>
                   <input
-                    ref={dateRef}
                     type="date"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="invisible absolute bottom-0 left-0 h-0 w-0"
-                    tabIndex={-1}
+                    className="flex h-12 w-full items-center justify-between rounded-2xl border border-border bg-muted/50 px-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                   />
                 </div>
 

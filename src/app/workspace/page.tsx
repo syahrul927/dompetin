@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/shared/AppShell";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -16,17 +16,6 @@ import { useActiveWorkspace } from "@/components/providers/workspace-provider";
 import { api } from "@/trpc/react";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// Mock members for active workspace
-const MOCK_MEMBERS = [
-  {
-    id: "m-1",
-    name: "Syahrul Ataufik",
-    email: "syahrul@email.com",
-    initials: "SA",
-    role: "owner" as const,
-  },
-];
-
 /**
  * Workspace management page.
  * Shows workspace list, active workspace members, and actions to create/invite.
@@ -41,8 +30,15 @@ export default function WorkspacePage() {
   const { data: workspaces, isLoading: isLoadingWorkspaces } =
     api.workspace.getWorkspaces.useQuery({});
 
+  // Fetch members
+  const { data: membersData, isLoading: isLoadingMembers } =
+    api.workspace.getWorkspaceMembers.useQuery(
+      { workspaceId },
+      { enabled: !!workspaceId }
+    );
+
   // Auto-select first workspace if none is selected
-  React.useEffect(() => {
+  useEffect(() => {
     if (!workspaceId && workspaces && workspaces.length > 0) {
       setWorkspaceId(workspaces[0]!.id);
     }
@@ -50,6 +46,17 @@ export default function WorkspacePage() {
 
   const activeWorkspace = workspaces?.find((ws) => ws.id === workspaceId);
   const isOwner = activeWorkspace?.isOwner ?? false;
+
+  const mappedMembers = membersData?.map((m) => {
+    const initials = m.user.name.split(" ").map((n) => n[0]).join("").toUpperCase() || "??";
+    return {
+      id: m.userId,
+      name: m.user.name,
+      email: m.user.email,
+      initials,
+      role: m.role as "owner" | "admin" | "member" | "viewer",
+    };
+  }) ?? [];
 
   return (
     <AppShell>
@@ -59,7 +66,7 @@ export default function WorkspacePage() {
         onBack={() => router.back()}
       />
 
-      <div className="animate-in fade-in slide-in-from-bottom-2 duration-200 space-y-6 px-5 pb-28">
+      <div className="space-y-6 px-5 pt-2">
         {/* Workspace List */}
         <div>
           <SectionHeader title="Workspace Anda" />
@@ -72,8 +79,6 @@ export default function WorkspacePage() {
             {!isLoadingWorkspaces && workspaces?.map((workspace, index) => (
               <div
                 key={workspace.id}
-                className="animate-in fade-in slide-in-from-bottom-1"
-                style={{ animationDelay: `${index * 40}ms` }}
               >
                 <WorkspaceListItem
                   workspace={workspace}
@@ -112,8 +117,11 @@ export default function WorkspacePage() {
                   : undefined
               }
             />
-            {/* TODO: Connect MemberList to tRPC workspace.getMembers */}
-            <MemberList members={MOCK_MEMBERS} isOwner={isOwner} />
+            {isLoadingMembers ? (
+              <div className="space-y-3 px-1"><Skeleton className="h-14 w-full rounded-2xl" /></div>
+            ) : (
+              <MemberList members={mappedMembers} isOwner={isOwner} />
+            )}
 
             {/* Invite button (alternative) */}
             {isOwner && (

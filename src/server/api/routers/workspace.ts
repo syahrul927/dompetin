@@ -58,8 +58,37 @@ export const workspaceRouter = {
     }),
 
   /**
-   * Get a single workspace by ID
+   * Get all members for a specific workspace
    */
+  getWorkspaceMembers: protectedProcedure
+    .input(z.object({ workspaceId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      // Check if current user has access
+      const member = await db.query.workspaceMember.findFirst({
+        where: and(
+          eq(workspaceMember.workspaceId, input.workspaceId),
+          eq(workspaceMember.userId, ctx.session.user.id),
+        ),
+      });
+
+      if (!member) throw new Error("Access denied");
+
+      // Fetch all members with their user details
+      const members = await db.query.workspaceMember.findMany({
+        where: eq(workspaceMember.workspaceId, input.workspaceId),
+        with: {
+          user: {
+            columns: {
+              name: true,
+              email: true,
+            }
+          }
+        },
+        orderBy: [desc(workspaceMember.role), asc(workspaceMember.joinedAt)]
+      });
+
+      return members;
+    }),
   getWorkspace: protectedProcedure
     .input(
       z.object({
