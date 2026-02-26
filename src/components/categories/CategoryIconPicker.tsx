@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerTrigger, DrawerTitle } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import {
   CATEGORY_ICONS_BY_GROUP,
@@ -75,7 +75,7 @@ export function CategoryIconPicker({
       <DrawerContent className="max-h-[85vh] px-0 pb-0">
         <div className="px-5 pb-4 pt-2">
           <div className="mb-4 text-center">
-            <h2 className="text-lg font-bold text-foreground">Pilih Ikon</h2>
+            <DrawerTitle className="text-lg font-bold text-foreground">Pilih Ikon</DrawerTitle>
             <p className="text-sm text-muted-foreground">
               Pilih ikon untuk kategori ini
             </p>

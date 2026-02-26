@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { api } from "@/trpc/react";
 import { getCategoryIcon } from "@/lib/category-icons";
 import { Check } from "lucide-react";
@@ -39,9 +39,9 @@ export function CategorySelectDrawer({
       <DrawerContent className="max-h-[85vh] px-0 pb-0">
         <div className="px-5 pb-6 pt-2">
           <div className="mb-4 text-center">
-            <h2 className="text-lg font-bold text-foreground">
+            <DrawerTitle className="text-lg font-bold text-foreground">
               Pilih Kategori {type === "income" ? "Pemasukan" : "Pengeluaran"}
-            </h2>
+            </DrawerTitle>
           </div>
 
           <div className="h-[50vh] overflow-y-auto space-y-1 pr-2">

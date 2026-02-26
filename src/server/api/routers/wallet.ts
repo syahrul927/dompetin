@@ -88,7 +88,7 @@ export const walletRouter = {
           eq(transactionSchema.walletId, input.id),
           isNull(transactionSchema.deletedAt),
         ),
-        orderBy: [desc(transactionSchema.date)],
+        orderBy: [desc(transactionSchema.date), desc(transactionSchema.createdAt)],
         limit: 20,
       });
 

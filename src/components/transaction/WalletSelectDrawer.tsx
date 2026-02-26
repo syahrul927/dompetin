@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { api } from "@/trpc/react";
 import { getWalletIcon } from "@/lib/wallet-icons";
 import { Check } from "lucide-react";
@@ -37,7 +37,7 @@ export function WalletSelectDrawer({
       <DrawerContent className="max-h-[85vh] px-0 pb-0">
         <div className="px-5 pb-6 pt-2">
           <div className="mb-4 text-center">
-            <h2 className="text-lg font-bold text-foreground">Pilih Dompet</h2>
+            <DrawerTitle className="text-lg font-bold text-foreground">Pilih Dompet</DrawerTitle>
           </div>
 
           <div className="space-y-1">

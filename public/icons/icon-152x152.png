@@ -1,0 +1,14 @@
+This is a placeholder file for icon-152x152.png
+
+To generate actual PWA icons, you can:
+
+1. Use a design tool to create a 512x512 PNG icon
+2. Use an online tool like https://www.pwabuilder.com/imageGenerator
+3. Use a CLI tool: pnpm add -D pwa-asset-generator
+
+Example with pwa-asset-generator:
+  pnpm exec pwa-asset-generator src/icon.png public/icons/
+
+Required sizes:
+152x152px
+

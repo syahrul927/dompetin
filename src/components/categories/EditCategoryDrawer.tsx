@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Drawer, DrawerContent } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -113,9 +113,9 @@ export function EditCategoryDrawer({
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent className="px-5 pb-8 pt-2">
           <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-[22px] font-bold text-foreground">
+            <DrawerTitle className="text-[22px] font-bold text-foreground">
               Edit Kategori
-            </h2>
+            </DrawerTitle>
             {!category.isSystem && (
               <Button
                 variant="ghost"

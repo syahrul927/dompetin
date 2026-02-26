@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { api } from "@/trpc/react";
 
 interface WorkspaceContextType {
   workspaceId: string;
@@ -28,13 +29,22 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("dompetin_workspace_id", id);
   };
 
-  // Prevent hydration mismatch by not rendering anything that depends on workspaceId
-  // until we've mounted on the client and read from localStorage.
-  // Actually, for a provider, it's safe to render children, just the initial state is empty.
+  // Auto-select: fetch workspaces when no workspace is stored
+  const { data: workspaces } = api.workspace.getWorkspaces.useQuery(
+    {},
+    {
+      enabled: isMounted && !workspaceId,
+      retry: false, // don't retry on auth errors (login/register pages)
+    },
+  );
+
+  useEffect(() => {
+    if (!workspaceId && workspaces && workspaces.length > 0) {
+      setWorkspaceId(workspaces[0]!.id);
+    }
+  }, [workspaceId, workspaces]);
+
   if (!isMounted) {
-    // Return early or render children with empty state.
-    // Rendering children is usually fine as long as components relying on workspaceId
-    // handle the empty string gracefully during initial mount.
     return (
       <WorkspaceContext.Provider value={{ workspaceId: "", setWorkspaceId }}>
         {children}
