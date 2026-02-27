@@ -17,8 +17,8 @@ interface Transaction {
   amount: number;
   type: "income" | "expense" | "transfer_debit" | "transfer_credit";
   authorName?: string;
-  createdBy?: any;
-  raw?: any;
+  createdBy?: { id: string; name: string } | null;
+  raw?: Record<string, unknown>;
 }
 
 interface WalletTransactionListProps {
@@ -38,8 +38,8 @@ export function WalletTransactionList({
 }: WalletTransactionListProps) {
   const { data: session } = authClient.useSession();
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [actionTx, setActionTx] = useState<any>(null);
-  const [editTx, setEditTx] = useState<any>(null);
+  const [actionTx, setActionTx] = useState<Transaction | null>(null);
+  const [editTx, setEditTx] = useState<Record<string, unknown> | null>(null);
 
   const visibleTransactions = transactions.slice(0, visibleCount);
   const hasMore = visibleCount < transactions.length;
@@ -81,10 +81,12 @@ export function WalletTransactionList({
 
       <TransactionActionSheet
         open={!!actionTx}
-        onOpenChange={(open) => !open && setActionTx(null)}
-        transaction={actionTx}
+        onOpenChange={(open) => {
+          if (!open) setActionTx(null);
+        }}
+        transaction={actionTx as React.ComponentProps<typeof TransactionActionSheet>["transaction"]}
         currentUserId={session?.user?.id}
-        onEdit={() => setEditTx(actionTx?.raw)}
+        onEdit={() => setEditTx(actionTx?.raw ?? null)}
       />
 
       <AddTransactionSheet

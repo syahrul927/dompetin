@@ -41,7 +41,7 @@ export default function BudgetPage() {
         {!isLoading && budgets?.map(budget => (
           <BudgetCard
             key={budget.id}
-            budget={budget as any}
+            budget={budget as React.ComponentProps<typeof BudgetCard>["budget"]}
             onClick={() => setSelectedBudget(budget.id)}
           />
         ))}
@@ -62,7 +62,7 @@ export default function BudgetPage() {
         <EditBudgetDrawer
           open={!!selectedBudget}
           onOpenChange={(open) => !open && setSelectedBudget(null)}
-          budget={activeBudget as any}
+          budget={activeBudget as React.ComponentProps<typeof EditBudgetDrawer>["budget"]}
         />
       )}
     </>

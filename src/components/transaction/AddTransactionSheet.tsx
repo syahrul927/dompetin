@@ -32,7 +32,7 @@ import { cn } from "@/lib/utils";
 interface AddTransactionSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  initialData?: any; // The full transaction object from DB
+  initialData?: Record<string, unknown> | null; // The full transaction object from DB
 }
 
 export function AddTransactionSheet({
@@ -76,18 +76,18 @@ export function AddTransactionSheet({
       if (initialData) {
         setStep("details");
 
-        let txType = initialData.type;
+        let txType = initialData.type as "income" | "expense" | "transfer" | "transfer_debit" | "transfer_credit";
         if (txType === "transfer_debit" || txType === "transfer_credit") txType = "transfer";
 
         setType(txType);
         setAmountStr(Math.abs(Number(initialData.amount)).toString());
-        setName(initialData.name);
-        setDate(new Date(initialData.date).toISOString().split("T")[0]!);
-        setNote(initialData.notes || "");
+        setName(initialData.name as string);
+        setDate(new Date(initialData.date as string).toISOString().split("T")[0]!);
+        setNote((initialData.notes as string) || "");
 
         if (txType !== "transfer") {
-          setWalletId(initialData.wallet?.id || "");
-          setCategoryId(initialData.category?.id || "");
+          setWalletId((initialData.wallet as { id: string })?.id || "");
+          setCategoryId((initialData.category as { id: string })?.id || "");
         }
       } else {
         resetForm();
@@ -172,7 +172,7 @@ export function AddTransactionSheet({
 
         if (type !== "transfer") {
            await updateTransaction.mutateAsync({
-             id: initialData.id,
+             id: initialData.id as string,
              name: name.trim(),
              notes: note.trim() || undefined,
              date: dateISO,
@@ -182,7 +182,7 @@ export function AddTransactionSheet({
         } else {
            // For transfers, only allow updating name/notes/date to avoid complex balance logic
            await updateTransaction.mutateAsync({
-             id: initialData.id,
+             id: initialData.id as string,
              name: name.trim(),
              notes: note.trim() || undefined,
              date: dateISO,

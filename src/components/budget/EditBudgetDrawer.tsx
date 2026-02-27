@@ -184,7 +184,7 @@ export function EditBudgetDrawer({ open, onOpenChange, budget }: Props) {
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
             <AlertDialogAction
-              onClick={(e) => { e.preventDefault(); handleDelete(); }}
+              onClick={(e) => { e.preventDefault(); void handleDelete(); }}
               disabled={deleteBudget.isPending}
               className="h-12 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >

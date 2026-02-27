@@ -47,8 +47,8 @@ export default function TransactionsPage() {
   const [limit, setLimit] = useState(PAGE_SIZE);
 
   // Sheets state
-  const [actionTx, setActionTx] = useState<any>(null);
-  const [editTx, setEditTx] = useState<any>(null);
+  const [actionTx, setActionTx] = useState<Record<string, unknown> | null>(null);
+  const [editTx, setEditTx] = useState<Record<string, unknown> | null>(null);
 
   const { data, isLoading } = api.transaction.getTransactions.useQuery(
     { workspaceId, limit, offset: 0 },
@@ -177,10 +177,12 @@ export default function TransactionsPage() {
 
       <TransactionActionSheet
         open={!!actionTx}
-        onOpenChange={(open) => !open && setActionTx(null)}
-        transaction={actionTx}
+        onOpenChange={(open) => {
+          if (!open) setActionTx(null);
+        }}
+        transaction={actionTx as React.ComponentProps<typeof TransactionActionSheet>["transaction"]}
         currentUserId={session?.user?.id}
-        onEdit={() => setEditTx(actionTx?.raw)}
+        onEdit={() => setEditTx((actionTx?.raw as Record<string, unknown>) ?? null)}
       />
 
       <AddTransactionSheet
