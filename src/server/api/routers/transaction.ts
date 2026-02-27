@@ -293,12 +293,22 @@ export const transactionRouter = {
           createdBy: ctx.session.user.id,
         });
 
-        // Update wallet balance
+        // Get current wallet balance
+        const currentWallet = await tx.query.wallet.findFirst({
+          where: eq(walletSchema.id, input.walletId),
+        });
+
+        if (!currentWallet) throw new Error("Wallet not found during update");
+
+        const currentBalance = Number(currentWallet.balance);
+        const amountNum = Number(amountDb);
+
+        // Update wallet balance safely in TypeScript
         if (input.type === "income") {
           await tx
             .update(walletSchema)
             .set({
-              balance: sql`${walletSchema.balance}::numeric + ${amountDb}::numeric`,
+              balance: (currentBalance + amountNum).toFixed(2),
               updatedAt: new Date(),
             })
             .where(eq(walletSchema.id, input.walletId));
@@ -306,7 +316,7 @@ export const transactionRouter = {
           await tx
             .update(walletSchema)
             .set({
-              balance: sql`${walletSchema.balance}::numeric - ${amountDb}::numeric`,
+              balance: (currentBalance - amountNum).toFixed(2),
               updatedAt: new Date(),
             })
             .where(eq(walletSchema.id, input.walletId));
@@ -409,11 +419,23 @@ export const transactionRouter = {
           })
           .returning();
 
-        // Update wallet balances
+        // Fetch both wallets fresh inside transaction
+        const currentFromWallet = await tx.query.wallet.findFirst({
+          where: eq(walletSchema.id, input.fromWalletId),
+        });
+        const currentToWallet = await tx.query.wallet.findFirst({
+          where: eq(walletSchema.id, input.toWalletId),
+        });
+
+        if (!currentFromWallet || !currentToWallet) throw new Error("Wallet not found during update");
+
+        const amountNum = Number(amountDb);
+
+        // Update wallet balances safely
         await tx
           .update(walletSchema)
           .set({
-            balance: sql`${walletSchema.balance}::numeric - ${amountDb}::numeric`,
+            balance: (Number(currentFromWallet.balance) - amountNum).toFixed(2),
             updatedAt: new Date(),
           })
           .where(eq(walletSchema.id, input.fromWalletId));
@@ -421,7 +443,7 @@ export const transactionRouter = {
         await tx
           .update(walletSchema)
           .set({
-            balance: sql`${walletSchema.balance}::numeric + ${amountDb}::numeric`,
+            balance: (Number(currentToWallet.balance) + amountNum).toFixed(2),
             updatedAt: new Date(),
           })
           .where(eq(walletSchema.id, input.toWalletId));
@@ -643,49 +665,69 @@ export const transactionRouter = {
         }
 
         const amountDb = Math.abs(parseFloat(existingTx.amount as unknown as string)).toFixed(2);
+        const amountNum = Number(amountDb);
 
         // Revert balance based on type
         if (existingTx.type === "income") {
           // Revert income = subtract from wallet
-          await tx
-            .update(walletSchema)
-            .set({
-              balance: sql`${walletSchema.balance}::numeric - ${amountDb}::numeric`,
-              updatedAt: new Date(),
-            })
-            .where(eq(walletSchema.id, existingTx.walletId));
+          const currentWallet = await tx.query.wallet.findFirst({
+            where: eq(walletSchema.id, existingTx.walletId),
+          });
+          if (currentWallet) {
+            await tx
+              .update(walletSchema)
+              .set({
+                balance: (Number(currentWallet.balance) - amountNum).toFixed(2),
+                updatedAt: new Date(),
+              })
+              .where(eq(walletSchema.id, existingTx.walletId));
+          }
         } else if (existingTx.type === "expense") {
           // Revert expense = add back to wallet
-          await tx
-            .update(walletSchema)
-            .set({
-              balance: sql`${walletSchema.balance}::numeric + ${amountDb}::numeric`,
-              updatedAt: new Date(),
-            })
-            .where(eq(walletSchema.id, existingTx.walletId));
+          const currentWallet = await tx.query.wallet.findFirst({
+            where: eq(walletSchema.id, existingTx.walletId),
+          });
+          if (currentWallet) {
+            await tx
+              .update(walletSchema)
+              .set({
+                balance: (Number(currentWallet.balance) + amountNum).toFixed(2),
+                updatedAt: new Date(),
+              })
+              .where(eq(walletSchema.id, existingTx.walletId));
+          }
         } else if (existingTx.type === "transfer" && existingTx.toWalletId) {
             // Revert transfer: Add back to fromWallet, subtract from toWallet
             const isDebit = parseFloat(existingTx.amount as unknown as string) < 0;
             const sourceWalletId = isDebit ? existingTx.walletId : existingTx.toWalletId;
             const destWalletId = isDebit ? existingTx.toWalletId : existingTx.walletId;
 
-            // Add back to source
-            await tx
-              .update(walletSchema)
-              .set({
-                balance: sql`${walletSchema.balance}::numeric + ${amountDb}::numeric`,
-                updatedAt: new Date(),
-              })
-              .where(eq(walletSchema.id, sourceWalletId));
+            const currentSource = await tx.query.wallet.findFirst({
+              where: eq(walletSchema.id, sourceWalletId),
+            });
+            const currentDest = await tx.query.wallet.findFirst({
+              where: eq(walletSchema.id, destWalletId),
+            });
 
-            // Subtract from destination
-            await tx
-              .update(walletSchema)
-              .set({
-                balance: sql`${walletSchema.balance}::numeric - ${amountDb}::numeric`,
-                updatedAt: new Date(),
-              })
-              .where(eq(walletSchema.id, destWalletId));
+            if (currentSource && currentDest) {
+              // Add back to source
+              await tx
+                .update(walletSchema)
+                .set({
+                  balance: (Number(currentSource.balance) + amountNum).toFixed(2),
+                  updatedAt: new Date(),
+                })
+                .where(eq(walletSchema.id, sourceWalletId));
+
+              // Subtract from destination
+              await tx
+                .update(walletSchema)
+                .set({
+                  balance: (Number(currentDest.balance) - amountNum).toFixed(2),
+                  updatedAt: new Date(),
+                })
+                .where(eq(walletSchema.id, destWalletId));
+            }
         }
       });
 
