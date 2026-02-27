@@ -14,6 +14,7 @@ interface TransactionRowProps {
     amount: number;
     type: "income" | "expense" | "transfer_debit" | "transfer_credit";
     authorName?: string;
+    walletContext?: string;
   };
   onClick?: () => void;
 }
@@ -60,9 +61,11 @@ export function TransactionRow({ transaction, onClick }: TransactionRowProps) {
         <p className="text-sm font-medium text-foreground">
           {transaction.name}
         </p>
-        <p className="mt-0.5 text-xs text-muted-foreground">
+        <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">
           {transaction.authorName ? `${transaction.authorName} · ` : ""}
-          {transaction.category} · {transaction.date}
+          {transaction.category}
+          {transaction.walletContext ? ` · ${transaction.walletContext}` : ""}
+          {` · ${transaction.date}`}
         </p>
       </div>
       <AmountText
