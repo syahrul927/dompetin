@@ -26,9 +26,8 @@ interface Budget {
   name: string;
   amount: number;
   spent: number;
-  categoryName: string;
-  categoryIcon: string;
-  categoryColor: string;
+  icon: string;
+  color: string;
 }
 
 interface Props {
@@ -88,7 +87,7 @@ export function EditBudgetDrawer({ open, onOpenChange, budget }: Props) {
     }
   };
 
-  const Icon = getCategoryIcon(budget.categoryIcon);
+  const Icon = getCategoryIcon(budget.icon);
 
   return (
     <>
@@ -128,19 +127,6 @@ export function EditBudgetDrawer({ open, onOpenChange, budget }: Props) {
             </div>
           ) : (
             <div className="flex flex-1 flex-col">
-              <div className="flex items-center justify-between border-b px-5 py-4">
-                <span className="text-sm font-medium text-muted-foreground">Kategori</span>
-                <div className="flex items-center gap-2">
-                  <div
-                    className="flex h-6 w-6 items-center justify-center rounded-md bg-opacity-20"
-                    style={{ backgroundColor: `${budget.categoryColor}20`, color: budget.categoryColor }}
-                  >
-                    <Icon size={14} />
-                  </div>
-                  <span className="text-sm font-semibold">{budget.categoryName}</span>
-                </div>
-              </div>
-
               <div className="flex items-center justify-between border-b px-5 py-4">
                 <span className="text-sm font-medium text-muted-foreground">Batas Anggaran</span>
                 <button type="button" onClick={() => setStep("amount")} className="text-lg font-bold text-primary">

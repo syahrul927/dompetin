@@ -9,15 +9,14 @@ interface BudgetCardProps {
     name: string;
     amount: number;
     spent: number;
-    categoryName: string;
-    categoryIcon: string;
-    categoryColor: string;
+    icon: string;
+    color: string;
   };
   onClick: () => void;
 }
 
 export function BudgetCard({ budget, onClick }: BudgetCardProps) {
-  const Icon = getCategoryIcon(budget.categoryIcon);
+  const Icon = getCategoryIcon(budget.icon);
   const percentage = Math.min((budget.spent / budget.amount) * 100, 100);
   const isOverBudget = budget.spent > budget.amount;
 
@@ -30,13 +29,12 @@ export function BudgetCard({ budget, onClick }: BudgetCardProps) {
         <div className="flex items-center gap-3">
           <div
             className="flex h-10 w-10 items-center justify-center rounded-xl bg-opacity-20"
-            style={{ backgroundColor: `${budget.categoryColor}20`, color: budget.categoryColor }}
+            style={{ backgroundColor: `${budget.color}20`, color: budget.color }}
           >
             <Icon size={20} />
           </div>
           <div>
             <h3 className="font-semibold text-foreground">{budget.name}</h3>
-            <p className="text-xs text-muted-foreground">{budget.categoryName}</p>
           </div>
         </div>
       </div>

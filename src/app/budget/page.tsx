@@ -6,7 +6,8 @@ import { useActiveWorkspace } from "@/components/providers/workspace-provider";
 import { api } from "@/trpc/react";
 import { BudgetCard } from "@/components/budget/BudgetCard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FAB } from "@/components/shared/FAB";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 import { CreateBudgetDrawer } from "@/components/budget/CreateBudgetDrawer";
 import { EditBudgetDrawer } from "@/components/budget/EditBudgetDrawer";
 
@@ -45,16 +46,25 @@ export default function BudgetPage() {
             onClick={() => setSelectedBudget(budget.id)}
           />
         ))}
-      </div>
 
-      <FAB onClick={() => setShowCreate(true)} />
+        {!isLoading && (
+          <div className="mt-6 flex justify-center pb-10 pt-4">
+            <Button
+              variant="outline"
+              className="h-12 rounded-full border-primary/20 text-primary hover:bg-primary/5 px-6"
+              onClick={() => setShowCreate(true)}
+            >
+              <Plus className="mr-2 h-4 w-4" /> Tambah Anggaran Baru
+            </Button>
+          </div>
+        )}
+      </div>
 
       {workspaceId && (
         <CreateBudgetDrawer
           open={showCreate}
           onOpenChange={setShowCreate}
           workspaceId={workspaceId}
-          existingCategoryIds={budgets?.map(b => b.categoryId).filter((id): id is string => id !== null) ?? []}
         />
       )}
 
