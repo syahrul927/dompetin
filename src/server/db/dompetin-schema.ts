@@ -209,6 +209,10 @@ export const transaction = pgTable("dompetin_transaction", {
     .notNull()
     .references(() => user.id, { onDelete: "set null" }),
 
+  budgetId: uuidColumn("budget_id").references(() => budget.id, {
+    onDelete: "set null",
+  }),
+
   // Soft delete fields
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
   deletedBy: text("deleted_by").references(() => user.id, {
@@ -270,9 +274,8 @@ export const budget = pgTable("dompetin_budget", {
     .notNull()
     .default("0"),
   period: varchar("period", { length: 20 }).notNull().default("monthly"), // monthly, weekly, yearly
-  categoryId: uuidColumn("category_id").references(() => category.id, {
-    onDelete: "cascade",
-  }),
+  icon: varchar("icon", { length: 50 }).notNull().default("💰"),
+  color: varchar("color", { length: 7 }).notNull().default("#3b82f6"),
   workspaceId: uuidColumn("workspace_id")
     .notNull()
     .references(() => workspace.id, { onDelete: "cascade" }),
@@ -371,6 +374,10 @@ export const transactionRelations = relations(transaction, ({ one }) => ({
     fields: [transaction.categoryId],
     references: [category.id],
   }),
+  budget: one(budget, {
+    fields: [transaction.budgetId],
+    references: [budget.id],
+  }),
   wallet: one(wallet, {
     fields: [transaction.walletId],
     references: [wallet.id],
@@ -393,18 +400,14 @@ export const transactionRelations = relations(transaction, ({ one }) => ({
 
 export const categoryRelations = relations(category, ({ many }) => ({
   transactions: many(transaction),
-  budgets: many(budget),
 }));
 
-export const budgetRelations = relations(budget, ({ one }) => ({
-  category: one(category, {
-    fields: [budget.categoryId],
-    references: [category.id],
-  }),
+export const budgetRelations = relations(budget, ({ one, many }) => ({
   workspace: one(workspace, {
     fields: [budget.workspaceId],
     references: [workspace.id],
   }),
+  transactions: many(transaction),
 }));
 
 export const goalRelations = relations(goal, ({ one }) => ({
