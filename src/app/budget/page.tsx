@@ -54,7 +54,7 @@ export default function BudgetPage() {
           open={showCreate}
           onOpenChange={setShowCreate}
           workspaceId={workspaceId}
-          existingCategoryIds={budgets?.map(b => b.categoryId) ?? []}
+          existingCategoryIds={budgets?.map(b => b.categoryId).filter((id): id is string => id !== null) ?? []}
         />
       )}
 

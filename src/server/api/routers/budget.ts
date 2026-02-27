@@ -46,6 +46,10 @@ export const budgetRouter = {
         eq(budgetSchema.workspaceId, input.workspaceId)
       ];
 
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
+
       // Use a subquery to get total spent per category in the current month
       const spentSubquery = db
         .select({

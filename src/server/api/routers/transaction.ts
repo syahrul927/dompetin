@@ -454,16 +454,14 @@ export const transactionRouter = {
         throw new Error("Transaction not found");
       }
 
-      // Verify user has access to this workspace
-      const member = await db.query.workspaceMember.findFirst({
-        where: and(
-          eq(workspaceMember.workspaceId, existingTx.workspaceId),
-          eq(workspaceMember.userId, ctx.session.user.id),
-        ),
-      });
+      // Verify creator ONLY authorization
+      if (existingTx.createdBy !== ctx.session.user.id) {
+        throw new Error("Only the creator can edit this transaction");
+      }
 
-      if (!member) {
-        throw new Error("Access denied to this workspace");
+      // If transfer, block updates to specific fields
+      if (existingTx.type === "transfer" && (input.amount !== undefined || input.categoryId !== undefined)) {
+        throw new Error("Cannot update amount or category for transfer transactions");
       }
 
       // Verify category belongs to workspace if provided
@@ -607,17 +605,16 @@ export const transactionRouter = {
     }),
 
   /**
-   * Soft delete a transaction
+   * Delete a transaction (Hard delete + balance reversion)
    */
-  softDeleteTransaction: protectedProcedure
+  deleteTransaction: protectedProcedure
     .input(
       z.object({
         id: z.string().uuid(),
-        reason: z.string().max(500).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      // Get existing transaction
+      // 1. Fetch transaction
       const existingTx = await db.query.transaction.findFirst({
         where: eq(transaction.id, input.id),
       });
@@ -626,27 +623,71 @@ export const transactionRouter = {
         throw new Error("Transaction not found");
       }
 
-      // Verify user has access to this workspace
-      const member = await db.query.workspaceMember.findFirst({
-        where: and(
-          eq(workspaceMember.workspaceId, existingTx.workspaceId),
-          eq(workspaceMember.userId, ctx.session.user.id),
-        ),
-      });
-
-      if (!member) {
-        throw new Error("Access denied to this workspace");
+      // 2. Verify creator ONLY authorization
+      if (existingTx.createdBy !== ctx.session.user.id) {
+        throw new Error("Only the creator can delete this transaction");
       }
 
-      // Soft delete - set deletedAt and deletedBy
-      await db
-        .update(transaction)
-        .set({
-          deletedAt: new Date(),
-          deletedBy: ctx.session.user.id,
-        })
-        .where(eq(transaction.id, input.id))
-        .returning();
+      // 3. Database transaction to delete and revert balances
+      await db.transaction(async (tx) => {
+        // Delete the transaction
+        await tx.delete(transaction).where(eq(transaction.id, input.id));
+
+        // Delete the paired transfer transaction if it exists
+        if (existingTx.type === "transfer" && existingTx.transferId) {
+            await tx.delete(transaction).where(and(
+                eq(transaction.transferId, existingTx.transferId),
+                // Avoid deleting the same row twice just in case
+                sql`${transaction.id} != ${existingTx.id}`
+            ));
+        }
+
+        const amountDb = Math.abs(parseFloat(existingTx.amount as unknown as string)).toFixed(2);
+
+        // Revert balance based on type
+        if (existingTx.type === "income") {
+          // Revert income = subtract from wallet
+          await tx
+            .update(walletSchema)
+            .set({
+              balance: sql`${walletSchema.balance}::numeric - ${amountDb}::numeric`,
+              updatedAt: new Date(),
+            })
+            .where(eq(walletSchema.id, existingTx.walletId));
+        } else if (existingTx.type === "expense") {
+          // Revert expense = add back to wallet
+          await tx
+            .update(walletSchema)
+            .set({
+              balance: sql`${walletSchema.balance}::numeric + ${amountDb}::numeric`,
+              updatedAt: new Date(),
+            })
+            .where(eq(walletSchema.id, existingTx.walletId));
+        } else if (existingTx.type === "transfer" && existingTx.toWalletId) {
+            // Revert transfer: Add back to fromWallet, subtract from toWallet
+            const isDebit = parseFloat(existingTx.amount as unknown as string) < 0;
+            const sourceWalletId = isDebit ? existingTx.walletId : existingTx.toWalletId;
+            const destWalletId = isDebit ? existingTx.toWalletId : existingTx.walletId;
+
+            // Add back to source
+            await tx
+              .update(walletSchema)
+              .set({
+                balance: sql`${walletSchema.balance}::numeric + ${amountDb}::numeric`,
+                updatedAt: new Date(),
+              })
+              .where(eq(walletSchema.id, sourceWalletId));
+
+            // Subtract from destination
+            await tx
+              .update(walletSchema)
+              .set({
+                balance: sql`${walletSchema.balance}::numeric - ${amountDb}::numeric`,
+                updatedAt: new Date(),
+              })
+              .where(eq(walletSchema.id, destWalletId));
+        }
+      });
 
       return { success: true };
     }),
