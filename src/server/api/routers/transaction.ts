@@ -120,6 +120,12 @@ export const transactionRouter = {
               name: true,
             },
           },
+          toWallet: {
+            columns: {
+              id: true,
+              name: true,
+            },
+          },
           category: {
             columns: {
               id: true,

@@ -91,6 +91,26 @@ export const walletRouter = {
         orderBy: [desc(transactionSchema.date), desc(transactionSchema.createdAt)],
         limit: 20,
         with: {
+          wallet: {
+            columns: {
+              id: true,
+              name: true,
+            },
+          },
+          toWallet: {
+            columns: {
+              id: true,
+              name: true,
+            },
+          },
+          category: {
+            columns: {
+              id: true,
+              name: true,
+              icon: true,
+              color: true,
+            },
+          },
           createdBy: {
             columns: {
               id: true,
