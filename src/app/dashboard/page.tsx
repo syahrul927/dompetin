@@ -107,6 +107,9 @@ export default function DashboardPage() {
         date: dateStr,
         amount,
         type,
+        authorName: tx.createdBy?.name,
+        createdBy: tx.createdBy,
+        raw: tx,
       };
     }) ?? [];
 
