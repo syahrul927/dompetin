@@ -12,6 +12,7 @@ import { api } from "@/trpc/react";
 import { Loader2 } from "lucide-react";
 import { TransactionActionSheet } from "@/components/transaction/TransactionActionSheet";
 import { AddTransactionSheet } from "@/components/transaction/AddTransactionSheet";
+import { getWalletContext } from "@/lib/transaction-helpers";
 
 const PAGE_SIZE = 20;
 
@@ -79,6 +80,7 @@ export default function TransactionsPage() {
       rawDate: new Date(tx.date),
       amount,
       type,
+      walletContext: getWalletContext(tx.type, tx.wallet, tx.toWallet),
       authorName: tx.createdBy?.name,
       createdBy: tx.createdBy,
       raw: tx,

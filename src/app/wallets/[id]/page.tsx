@@ -12,6 +12,7 @@ import { DeleteWalletDialog } from "@/components/wallets/DeleteWalletDialog";
 import { AddTransactionSheet } from "@/components/transaction/AddTransactionSheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/trpc/react";
+import { getWalletContext } from "@/lib/transaction-helpers";
 
 const WALLET_TYPE_LABELS: Record<string, string> = {
   cash: "Tunai",
@@ -74,6 +75,7 @@ export default function WalletDetailPage() {
     }),
     amount: parseFloat(tx.amount),
     type: tx.type as "income" | "expense" | "transfer_debit" | "transfer_credit",
+    walletContext: getWalletContext(tx.type, tx.wallet as any, tx.toWallet as any),
     authorName: tx.createdBy?.name,
     createdBy: tx.createdBy,
     raw: tx,

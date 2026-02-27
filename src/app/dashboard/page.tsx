@@ -11,6 +11,7 @@ import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
 import { useActiveWorkspace } from "@/components/providers/workspace-provider";
 import { authClient } from "@/server/better-auth/client";
 import { api } from "@/trpc/react";
+import { getWalletContext } from "@/lib/transaction-helpers";
 
 /**
  * Main Dashboard page - landing page after authentication.
@@ -107,6 +108,7 @@ export default function DashboardPage() {
         date: dateStr,
         amount,
         type,
+        walletContext: getWalletContext(tx.type, tx.wallet as any, tx.toWallet as any),
         authorName: tx.createdBy?.name,
         createdBy: tx.createdBy,
         raw: tx,
