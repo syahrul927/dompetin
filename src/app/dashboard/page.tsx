@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { AppShell } from "@/components/shared/AppShell";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { BalanceHeroCard } from "@/components/dashboard/BalanceHeroCard";
 import { SummaryCards } from "@/components/dashboard/SummaryCards";
@@ -108,7 +107,11 @@ export default function DashboardPage() {
         date: dateStr,
         amount,
         type,
-        walletContext: getWalletContext(tx.type, tx.wallet as any, tx.toWallet as any),
+        walletContext: getWalletContext(
+          tx.type,
+          (tx as { wallet?: { name: string } | null }).wallet,
+          (tx as { toWallet?: { name: string } | null }).toWallet
+        ),
         authorName: tx.createdBy?.name,
         createdBy: tx.createdBy,
         raw: tx,

@@ -75,7 +75,11 @@ export default function WalletDetailPage() {
     }),
     amount: parseFloat(tx.amount),
     type: tx.type as "income" | "expense" | "transfer_debit" | "transfer_credit",
-    walletContext: getWalletContext(tx.type, tx.wallet as any, tx.toWallet as any),
+    walletContext: getWalletContext(
+      tx.type,
+      (tx as { wallet?: { name: string } | null }).wallet,
+      (tx as { toWallet?: { name: string } | null }).toWallet
+    ),
     authorName: tx.createdBy?.name,
     createdBy: tx.createdBy,
     raw: tx,
