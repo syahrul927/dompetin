@@ -223,7 +223,9 @@ export function AddTransactionSheet({
 
       await Promise.all([
         utils.transaction.getTransactions.invalidate(),
+        utils.transaction.getDashboardSummary.invalidate(),
         utils.wallet.getWallets.invalidate(),
+        utils.wallet.getWallet.invalidate(),
       ]);
 
       resetForm();

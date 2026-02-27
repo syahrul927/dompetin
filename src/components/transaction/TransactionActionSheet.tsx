@@ -49,6 +49,7 @@ export function TransactionActionSheet({ open, onOpenChange, transaction, onEdit
       await utils.transaction.getTransactions.invalidate();
       await utils.transaction.getDashboardSummary.invalidate();
       await utils.wallet.getWallets.invalidate();
+      await utils.wallet.getWallet.invalidate();
       setShowDeleteConfirm(false);
       onOpenChange(false);
     } catch (e) {
