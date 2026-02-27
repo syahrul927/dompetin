@@ -14,6 +14,7 @@ import { AmountInput } from "./AmountInput";
 import { FormRow } from "@/components/shared/FormRow";
 import { Numpad } from "@/components/shared/Numpad";
 import { WalletSelectDrawer } from "./WalletSelectDrawer";
+import { BudgetSelectDrawer } from "./BudgetSelectDrawer";
 import { CategorySelectDrawer } from "./CategorySelectDrawer";
 import { useActiveWorkspace } from "@/components/providers/workspace-provider";
 import { api } from "@/trpc/react";
@@ -55,6 +56,7 @@ export function AddTransactionSheet({
   const [fromWalletId, setFromWalletId] = useState("");
   const [toWalletId, setToWalletId] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [budgetId, setBudgetId] = useState("");
   const [date, setDate] = useState(
     new Date().toISOString().split("T")[0]!,
   );
@@ -69,6 +71,11 @@ export function AddTransactionSheet({
   const { data: categories } = api.category.getCategories.useQuery(
     { workspaceId, type: type as "income" | "expense" },
     { enabled: open && !!workspaceId && type !== "transfer" },
+  );
+
+  const { data: budgets } = api.budget.getBudgets.useQuery(
+    { workspaceId },
+    { enabled: open && !!workspaceId && type === "expense" },
   );
 
   React.useEffect(() => {
@@ -88,6 +95,9 @@ export function AddTransactionSheet({
         if (txType !== "transfer") {
           setWalletId((initialData.wallet as { id: string })?.id || "");
           setCategoryId((initialData.category as { id: string })?.id || "");
+        }
+        if (txType === "expense") {
+          setBudgetId((initialData.budget as { id: string })?.id || "");
         }
       } else {
         resetForm();
@@ -115,6 +125,12 @@ export function AddTransactionSheet({
     (c) => c.id === categoryId,
   )?.name;
 
+  const selectedBudgetName = budgets?.find(
+    (b) => b.id === budgetId,
+  )?.name;
+
+  const [isLocked, setIsLocked] = useState(false);
+
   const isSubmitting =
     createTransaction.isPending ||
     createTransfer.isPending ||
@@ -137,8 +153,10 @@ export function AddTransactionSheet({
     setFromWalletId("");
     setToWalletId("");
     setCategoryId("");
+    setBudgetId("");
     setDate(new Date().toISOString().split("T")[0]!);
     setNote("");
+    setIsLocked(false);
   };
 
   const handleTypeChange = (newType: "income" | "expense" | "transfer") => {
@@ -153,7 +171,9 @@ export function AddTransactionSheet({
   };
 
   const handleSubmit = async () => {
-    if (!canSubmit || isSubmitting) return;
+    if (!canSubmit || isSubmitting || isLocked) return;
+
+    setIsLocked(true);
 
     const amountInCents = amount * 100;
     const dateISO = new Date(date + "T00:00:00").toISOString();
@@ -178,6 +198,7 @@ export function AddTransactionSheet({
              date: dateISO,
              amount: amountInCents,
              categoryId: resolvedCategoryId,
+             budgetId: budgetId || undefined,
            });
         } else {
            // For transfers, only allow updating name/notes/date to avoid complex balance logic
@@ -217,6 +238,7 @@ export function AddTransactionSheet({
             date: dateISO,
             walletId,
             categoryId: resolvedCategoryId,
+            budgetId: budgetId || undefined,
           });
         }
       }
@@ -232,6 +254,8 @@ export function AddTransactionSheet({
       onOpenChange(false);
     } catch (error) {
       console.error("Failed to create transaction:", error);
+    } finally {
+      setIsLocked(false);
     }
   };
 
@@ -369,18 +393,34 @@ export function AddTransactionSheet({
 
                 {/* Category (not for transfer) */}
                 {type !== "transfer" && (
-                  <CategorySelectDrawer
-                    value={categoryId}
-                    type={type}
-                    onChange={setCategoryId}
-                    workspaceId={workspaceId}
-                  >
-                    <FormRow
-                      label="Kategori"
-                      value={selectedCategoryName}
-                      placeholder="Pilih kategori"
-                    />
-                  </CategorySelectDrawer>
+                  <>
+                    <CategorySelectDrawer
+                      value={categoryId}
+                      type={type}
+                      onChange={setCategoryId}
+                      workspaceId={workspaceId}
+                    >
+                      <FormRow
+                        label="Kategori"
+                        value={selectedCategoryName}
+                        placeholder="Pilih kategori"
+                      />
+                    </CategorySelectDrawer>
+
+                    {type === "expense" && (
+                      <BudgetSelectDrawer
+                        value={budgetId}
+                        onChange={setBudgetId}
+                        workspaceId={workspaceId}
+                      >
+                        <FormRow
+                          label="Anggaran"
+                          value={selectedBudgetName}
+                          placeholder="Pilih anggaran (Opsional)"
+                        />
+                      </BudgetSelectDrawer>
+                    )}
+                  </>
                 )}
 
                 {/* Date */}
