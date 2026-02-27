@@ -46,40 +46,53 @@ export const budgetRouter = {
         eq(budgetSchema.workspaceId, input.workspaceId)
       ];
 
-      if (input.categoryId) {
-        // Verify category exists and belongs to workspace
-        const categoryCheck = await db.query.category.findFirst({
-          where: eq(categorySchema.id, input.categoryId),
-        });
+      // Use a subquery to get total spent per category in the current month
+      const spentSubquery = db
+        .select({
+          categoryId: transaction.categoryId,
+          totalSpent: sql<number>`COALESCE(SUM(ABS(${transaction.amount}::numeric)), 0)`.as('total_spent'),
+        })
+        .from(transaction)
+        .where(
+          and(
+            eq(transaction.workspaceId, input.workspaceId),
+            eq(transaction.type, "expense"),
+            isNull(transaction.deletedAt),
+            sql`EXTRACT(YEAR FROM ${transaction.date}::timestamp) = ${currentYear}`,
+            sql`EXTRACT(MONTH FROM ${transaction.date}::timestamp) = ${currentMonth}`
+          )
+        )
+        .groupBy(transaction.categoryId)
+        .as('spent_subquery');
 
-        if (!categoryCheck) {
-          throw new Error("Category not found");
-        }
+      const budgets = await db
+        .select({
+          id: budgetSchema.id,
+          name: budgetSchema.name,
+          amount: budgetSchema.amount,
+          categoryId: budgetSchema.categoryId,
+          categoryName: categorySchema.name,
+          categoryIcon: categorySchema.icon,
+          categoryColor: categorySchema.color,
+          spent: sql<number>`COALESCE(${spentSubquery.totalSpent}, 0)`,
+        })
+        .from(budgetSchema)
+        .innerJoin(categorySchema, eq(budgetSchema.categoryId, categorySchema.id))
+        .leftJoin(spentSubquery, eq(budgetSchema.categoryId, spentSubquery.categoryId))
+        .where(
+          and(
+            eq(budgetSchema.workspaceId, input.workspaceId),
+            eq(budgetSchema.isActive, input.isActive)
+          )
+        )
+        .orderBy(desc(budgetSchema.createdAt));
 
-        if (categoryCheck.workspaceId !== input.workspaceId) {
-          throw new Error("Category must belong to the same workspace");
-        }
-
-        conditions.push(eq(budgetSchema.categoryId, input.categoryId));
-      }
-
-      // Fetch budgets
-      const budgets = await db.query.budget.findMany({
-        where: and(...conditions),
-        orderBy: [desc(budgetSchema.createdAt)],
-        with: {
-          category: {
-            columns: {
-              id: true,
-              name: true,
-              icon: true,
-              color: true,
-            },
-          },
-        },
-      });
-
-      return budgets;
+      // Convert string amounts to numbers
+      return budgets.map((b) => ({
+        ...b,
+        amount: parseFloat(b.amount as unknown as string),
+        spent: Number(b.spent),
+      }));
     }),
 
   /**
@@ -121,15 +134,16 @@ export const budgetRouter = {
 
       const spentResult = await db
         .select({
-          totalSpent: sql<number>`COALESCE(SUM(${budgetSchema.amount}), 0)`,
+          totalSpent: sql<number>`COALESCE(SUM(ABS(${transaction.amount}::numeric)), 0)`,
         })
         .from(transaction)
         .where(
           and(
             eq(transaction.categoryId, budgetData.categoryId),
+            eq(transaction.type, "expense"),
             isNull(transaction.deletedAt), // Exclude soft-deleted
-            sql`EXTRACT(YEAR FROM ${transaction.date}) = ${currentYear}`,
-            sql`EXTRACT(MONTH FROM ${transaction.date}) = ${currentMonthIdx + 1}`,
+            sql`EXTRACT(YEAR FROM ${transaction.date}::timestamp) = ${currentYear}`,
+            sql`EXTRACT(MONTH FROM ${transaction.date}::timestamp) = ${currentMonthIdx + 1}`,
           ),
         );
 
@@ -182,8 +196,21 @@ export const budgetRouter = {
         throw new Error("Category not found");
       }
 
-      if (categoryCheck.workspaceId !== input.workspaceId) {
+      if (categoryCheck.workspaceId !== input.workspaceId && !categoryCheck.isSystem) {
         throw new Error("Category must belong to the same workspace as budget");
+      }
+
+      // Ensure no budget exists for this category
+      const existingBudget = await db.query.budget.findFirst({
+        where: and(
+          eq(budgetSchema.workspaceId, input.workspaceId),
+          eq(budgetSchema.categoryId, input.categoryId),
+          eq(budgetSchema.isActive, true)
+        ),
+      });
+
+      if (existingBudget) {
+        throw new Error("Kategori ini sudah memiliki anggaran aktif");
       }
 
       // Convert amount from cents to decimal format
@@ -192,7 +219,7 @@ export const budgetRouter = {
       const endDateDb = input.endDate ? new Date(input.endDate) : null;
 
       // Create budget
-      const newBudget = await db.insert(budgetSchema).values({
+      const [newBudget] = await db.insert(budgetSchema).values({
         name: input.name,
         amount: amountDb,
         spent: "0",
@@ -204,7 +231,7 @@ export const budgetRouter = {
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
-      });
+      }).returning();
 
       return newBudget;
     }),
@@ -267,7 +294,7 @@ export const budgetRouter = {
           throw new Error("Category not found");
         }
 
-        if (categoryCheck.workspaceId !== existingBudget.workspaceId) {
+        if (categoryCheck.workspaceId !== existingBudget.workspaceId && !categoryCheck.isSystem) {
           throw new Error("Category must belong to the same workspace as budget");
         }
       }
