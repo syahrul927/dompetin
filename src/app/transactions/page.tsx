@@ -7,8 +7,11 @@ import { TransactionRow } from "@/components/shared/TransactionRow";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useActiveWorkspace } from "@/components/providers/workspace-provider";
+import { authClient } from "@/server/better-auth/client";
 import { api } from "@/trpc/react";
 import { Loader2 } from "lucide-react";
+import { TransactionActionSheet } from "@/components/transaction/TransactionActionSheet";
+import { AddTransactionSheet } from "@/components/transaction/AddTransactionSheet";
 
 const PAGE_SIZE = 20;
 
@@ -40,7 +43,12 @@ function formatGroupDate(date: Date | string): string {
 
 export default function TransactionsPage() {
   const { workspaceId } = useActiveWorkspace();
+  const { data: session } = authClient.useSession();
   const [limit, setLimit] = useState(PAGE_SIZE);
+
+  // Sheets state
+  const [actionTx, setActionTx] = useState<any>(null);
+  const [editTx, setEditTx] = useState<any>(null);
 
   const { data, isLoading } = api.transaction.getTransactions.useQuery(
     { workspaceId, limit, offset: 0 },
@@ -71,6 +79,9 @@ export default function TransactionsPage() {
       rawDate: new Date(tx.date),
       amount,
       type,
+      authorName: tx.createdBy?.name,
+      createdBy: tx.createdBy,
+      raw: tx,
     };
   });
 
@@ -137,7 +148,7 @@ export default function TransactionsPage() {
                   </h3>
                   <Card className="divide-y divide-border rounded-[20px] px-4">
                     {txs.map((tx) => (
-                      <TransactionRow key={tx.id} transaction={tx} />
+                      <TransactionRow key={tx.id} transaction={tx} onClick={() => setActionTx(tx)} />
                     ))}
                   </Card>
                 </div>
@@ -146,7 +157,7 @@ export default function TransactionsPage() {
 
             {/* Load More */}
             {hasMore && (
-              <div className="flex justify-center pt-2">
+              <div className="flex justify-center pt-2 pb-10">
                 <Button
                   variant="ghost"
                   onClick={() => setLimit((prev) => prev + PAGE_SIZE)}
@@ -163,6 +174,20 @@ export default function TransactionsPage() {
           </div>
         )}
       </div>
+
+      <TransactionActionSheet
+        open={!!actionTx}
+        onOpenChange={(open) => !open && setActionTx(null)}
+        transaction={actionTx}
+        currentUserId={session?.user?.id}
+        onEdit={() => setEditTx(actionTx?.raw)}
+      />
+
+      <AddTransactionSheet
+        open={!!editTx}
+        onOpenChange={(open) => !open && setEditTx(null)}
+        initialData={editTx}
+      />
     </>
   );
 }

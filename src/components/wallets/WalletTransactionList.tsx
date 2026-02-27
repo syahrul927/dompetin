@@ -5,6 +5,9 @@ import { SectionHeader } from "@/components/shared/SectionHeader";
 import { TransactionRow } from "@/components/shared/TransactionRow";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { TransactionActionSheet } from "@/components/transaction/TransactionActionSheet";
+import { AddTransactionSheet } from "@/components/transaction/AddTransactionSheet";
+import { authClient } from "@/server/better-auth/client";
 
 interface Transaction {
   id: string;
@@ -13,6 +16,9 @@ interface Transaction {
   date: string;
   amount: number;
   type: "income" | "expense" | "transfer_debit" | "transfer_credit";
+  authorName?: string;
+  createdBy?: any;
+  raw?: any;
 }
 
 interface WalletTransactionListProps {
@@ -30,7 +36,10 @@ export function WalletTransactionList({
   transactions,
   monthLabel,
 }: WalletTransactionListProps) {
+  const { data: session } = authClient.useSession();
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [actionTx, setActionTx] = useState<any>(null);
+  const [editTx, setEditTx] = useState<any>(null);
 
   const visibleTransactions = transactions.slice(0, visibleCount);
   const hasMore = visibleCount < transactions.length;
@@ -49,7 +58,7 @@ export function WalletTransactionList({
       <Card className="divide-y divide-border rounded-[20px] px-4">
         {visibleTransactions.length > 0 ? (
           visibleTransactions.map((tx) => (
-            <TransactionRow key={tx.id} transaction={tx} />
+            <TransactionRow key={tx.id} transaction={tx} onClick={() => setActionTx(tx)} />
           ))
         ) : (
           <p className="py-8 text-center text-sm text-muted-foreground">
@@ -69,6 +78,20 @@ export function WalletTransactionList({
           </Button>
         </div>
       )}
+
+      <TransactionActionSheet
+        open={!!actionTx}
+        onOpenChange={(open) => !open && setActionTx(null)}
+        transaction={actionTx}
+        currentUserId={session?.user?.id}
+        onEdit={() => setEditTx(actionTx?.raw)}
+      />
+
+      <AddTransactionSheet
+        open={!!editTx}
+        onOpenChange={(open) => !open && setEditTx(null)}
+        initialData={editTx}
+      />
     </div>
   );
 }

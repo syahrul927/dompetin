@@ -90,6 +90,15 @@ export const walletRouter = {
         ),
         orderBy: [desc(transactionSchema.date), desc(transactionSchema.createdAt)],
         limit: 20,
+        with: {
+          createdBy: {
+            columns: {
+              id: true,
+              name: true,
+              image: true,
+            },
+          },
+        },
       });
 
       // Calculate monthly income/expense

@@ -13,6 +13,7 @@ interface TransactionRowProps {
     date: string;
     amount: number;
     type: "income" | "expense" | "transfer_debit" | "transfer_credit";
+    authorName?: string;
   };
   onClick?: () => void;
 }
@@ -60,6 +61,7 @@ export function TransactionRow({ transaction, onClick }: TransactionRowProps) {
           {transaction.name}
         </p>
         <p className="mt-0.5 text-xs text-muted-foreground">
+          {transaction.authorName ? `${transaction.authorName} · ` : ""}
           {transaction.category} · {transaction.date}
         </p>
       </div>

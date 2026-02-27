@@ -73,7 +73,10 @@ export default function WalletDetailPage() {
       month: "short",
     }),
     amount: parseFloat(tx.amount),
-    type: tx.type as "income" | "expense",
+    type: tx.type as "income" | "expense" | "transfer_debit" | "transfer_credit",
+    authorName: tx.createdBy?.name,
+    createdBy: tx.createdBy,
+    raw: tx,
   }));
 
   const now = new Date();

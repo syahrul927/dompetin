@@ -1,8 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 import { TransactionRow } from "@/components/shared/TransactionRow";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TransactionActionSheet } from "@/components/transaction/TransactionActionSheet";
+import { AddTransactionSheet } from "@/components/transaction/AddTransactionSheet";
+import { authClient } from "@/server/better-auth/client";
 
 interface Transaction {
   id: string;
@@ -11,6 +14,9 @@ interface Transaction {
   date: string;
   amount: number;
   type: "income" | "expense" | "transfer_debit" | "transfer_credit";
+  authorName?: string;
+  createdBy?: any;
+  raw?: any;
 }
 
 interface RecentTransactionsProps {
@@ -25,6 +31,10 @@ export function RecentTransactions({
   transactions,
   isLoading,
 }: RecentTransactionsProps) {
+  const { data: session } = authClient.useSession();
+  const [actionTx, setActionTx] = useState<any>(null);
+  const [editTx, setEditTx] = useState<any>(null);
+
   if (isLoading) {
     return (
       <div>
@@ -66,9 +76,23 @@ export function RecentTransactions({
       />
       <Card className="divide-y divide-border rounded-[20px] px-4">
         {transactions.map((transaction) => (
-          <TransactionRow key={transaction.id} transaction={transaction} />
+          <TransactionRow key={transaction.id} transaction={transaction} onClick={() => setActionTx(transaction)} />
         ))}
       </Card>
+
+      <TransactionActionSheet
+        open={!!actionTx}
+        onOpenChange={(open) => !open && setActionTx(null)}
+        transaction={actionTx}
+        currentUserId={session?.user?.id}
+        onEdit={() => setEditTx(actionTx?.raw)}
+      />
+
+      <AddTransactionSheet
+        open={!!editTx}
+        onOpenChange={(open) => !open && setEditTx(null)}
+        initialData={editTx}
+      />
     </div>
   );
 }
