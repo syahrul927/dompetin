@@ -53,7 +53,7 @@ export const budgetRouter = {
       // Use a subquery to get total spent per category in the current month
       const spentSubquery = db
         .select({
-          categoryId: transaction.categoryId,
+          budgetId: transaction.budgetId,
           totalSpent: sql<number>`COALESCE(SUM(ABS(${transaction.amount}::numeric)), 0)`.as('total_spent'),
         })
         .from(transaction)
@@ -66,7 +66,7 @@ export const budgetRouter = {
             sql`EXTRACT(MONTH FROM ${transaction.date}::timestamp) = ${currentMonth}`
           )
         )
-        .groupBy(transaction.categoryId)
+        .groupBy(transaction.budgetId)
         .as('spent_subquery');
 
       const budgets = await db
@@ -74,15 +74,12 @@ export const budgetRouter = {
           id: budgetSchema.id,
           name: budgetSchema.name,
           amount: budgetSchema.amount,
-          categoryId: budgetSchema.categoryId,
-          categoryName: categorySchema.name,
-          categoryIcon: categorySchema.icon,
-          categoryColor: categorySchema.color,
+          icon: budgetSchema.icon,
+          color: budgetSchema.color,
           spent: sql<number>`COALESCE(${spentSubquery.totalSpent}, 0)`,
         })
         .from(budgetSchema)
-        .innerJoin(categorySchema, eq(budgetSchema.categoryId, categorySchema.id))
-        .leftJoin(spentSubquery, eq(budgetSchema.categoryId, spentSubquery.categoryId))
+        .leftJoin(spentSubquery, eq(budgetSchema.id, spentSubquery.budgetId))
         .where(
           and(
             eq(budgetSchema.workspaceId, input.workspaceId),
@@ -111,16 +108,6 @@ export const budgetRouter = {
     .query(async ({ input }) => {
       const budgetData = await db.query.budget.findFirst({
         where: eq(budgetSchema.id, input.id),
-        with: {
-          category: {
-            columns: {
-              id: true,
-              name: true,
-              icon: true,
-              color: true,
-            },
-          },
-        },
       });
 
       if (!budgetData) {
@@ -132,10 +119,6 @@ export const budgetRouter = {
       const currentYear = currentMonth.getFullYear();
       const currentMonthIdx = currentMonth.getMonth();
 
-      if (!budgetData.categoryId) {
-        throw new Error("Budget is missing category reference");
-      }
-
       const spentResult = await db
         .select({
           totalSpent: sql<number>`COALESCE(SUM(ABS(${transaction.amount}::numeric)), 0)`,
@@ -143,7 +126,7 @@ export const budgetRouter = {
         .from(transaction)
         .where(
           and(
-            eq(transaction.categoryId, budgetData.categoryId),
+            eq(transaction.budgetId, budgetData.id),
             eq(transaction.type, "expense"),
             isNull(transaction.deletedAt), // Exclude soft-deleted
             sql`EXTRACT(YEAR FROM ${transaction.date}::timestamp) = ${currentYear}`,
@@ -172,7 +155,8 @@ export const budgetRouter = {
         name: z.string().min(1).max(255),
         amount: z.number().positive(), // Amount in cents
         period: z.enum(["monthly", "weekly", "yearly"]).default("monthly"),
-        categoryId: z.string().uuid(),
+        icon: z.string().min(1).max(50).default("💰"),
+        color: z.string().min(1).max(7).default("#3b82f6"),
         workspaceId: z.string().uuid(),
         startDate: z.string().datetime().optional(),
         endDate: z.string().datetime().optional(),
@@ -191,32 +175,6 @@ export const budgetRouter = {
         throw new Error("Access denied to this workspace");
       }
 
-      // Verify category exists and belongs to workspace
-      const categoryCheck = await db.query.category.findFirst({
-        where: eq(categorySchema.id, input.categoryId),
-      });
-
-      if (!categoryCheck) {
-        throw new Error("Category not found");
-      }
-
-      if (categoryCheck.workspaceId !== input.workspaceId && !categoryCheck.isSystem) {
-        throw new Error("Category must belong to the same workspace as budget");
-      }
-
-      // Ensure no budget exists for this category
-      const existingBudget = await db.query.budget.findFirst({
-        where: and(
-          eq(budgetSchema.workspaceId, input.workspaceId),
-          eq(budgetSchema.categoryId, input.categoryId),
-          eq(budgetSchema.isActive, true)
-        ),
-      });
-
-      if (existingBudget) {
-        throw new Error("Kategori ini sudah memiliki anggaran aktif");
-      }
-
       // Convert amount from cents to decimal format
       const amountDb = (input.amount / 100).toFixed(2);
       const startDateDb = input.startDate ? new Date(input.startDate) : new Date();
@@ -228,7 +186,8 @@ export const budgetRouter = {
         amount: amountDb,
         spent: "0",
         period: input.period,
-        categoryId: input.categoryId,
+        icon: input.icon,
+        color: input.color,
         workspaceId: input.workspaceId,
         startDate: startDateDb,
         endDate: endDateDb,
@@ -250,7 +209,8 @@ export const budgetRouter = {
         name: z.string().min(1).max(255).optional(),
         amount: z.number().positive().optional(),
         period: z.enum(["monthly", "weekly", "yearly"]).optional(),
-        categoryId: z.string().uuid().optional(),
+        icon: z.string().min(1).max(50).optional(),
+        color: z.string().min(1).max(7).optional(),
         startDate: z.string().datetime().optional(),
         endDate: z.string().datetime().optional(),
         isActive: z.boolean().optional(),
@@ -260,16 +220,6 @@ export const budgetRouter = {
       // Get existing budget
       const existingBudget = await db.query.budget.findFirst({
         where: eq(budgetSchema.id, input.id),
-        with: {
-          category: {
-            columns: {
-              id: true,
-              name: true,
-              icon: true,
-              color: true,
-            },
-          },
-        },
       });
 
       if (!existingBudget) {
@@ -286,21 +236,6 @@ export const budgetRouter = {
 
       if (!member) {
         throw new Error("Access denied to this workspace");
-      }
-
-      // If category changed, verify it belongs to workspace
-      if (input.categoryId !== undefined && input.categoryId !== existingBudget.categoryId) {
-        const categoryCheck = await db.query.category.findFirst({
-          where: eq(categorySchema.id, input.categoryId),
-        });
-
-        if (!categoryCheck) {
-          throw new Error("Category not found");
-        }
-
-        if (categoryCheck.workspaceId !== existingBudget.workspaceId && !categoryCheck.isSystem) {
-          throw new Error("Category must belong to the same workspace as budget");
-        }
       }
 
       // Build update data
@@ -321,8 +256,12 @@ export const budgetRouter = {
         updateData.period = input.period;
       }
 
-      if (input.categoryId !== undefined) {
-        updateData.categoryId = input.categoryId;
+      if (input.icon !== undefined) {
+        updateData.icon = input.icon;
+      }
+
+      if (input.color !== undefined) {
+        updateData.color = input.color;
       }
 
       if (input.startDate !== undefined) {

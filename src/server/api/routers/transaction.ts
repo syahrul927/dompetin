@@ -214,6 +214,7 @@ export const transactionRouter = {
         walletId: z.string().uuid(),
         categoryId: z.string().uuid().optional(),
         toWalletId: z.string().uuid().optional(),
+        budgetId: z.string().uuid().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -293,6 +294,7 @@ export const transactionRouter = {
           notes: input.notes ?? null,
           date: new Date(input.date),
           categoryId: input.categoryId ?? null,
+          budgetId: input.budgetId ?? null,
           walletId: input.walletId,
           toWalletId: input.toWalletId ?? null,
           workspaceId,
@@ -470,6 +472,7 @@ export const transactionRouter = {
         notes: z.string().max(1000).optional(),
         date: z.string().datetime().optional(),
         categoryId: z.string().uuid().optional(),
+        budgetId: z.string().uuid().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -531,6 +534,10 @@ export const transactionRouter = {
 
       if (input.categoryId !== undefined) {
         updateData.categoryId = input.categoryId;
+      }
+
+      if (input.budgetId !== undefined) {
+        updateData.budgetId = input.budgetId;
       }
 
       // Update transaction
