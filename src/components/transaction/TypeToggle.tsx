@@ -7,12 +7,13 @@ type TransactionType = "income" | "expense" | "transfer";
 interface TypeToggleProps {
   value: TransactionType;
   onChange: (type: TransactionType) => void;
+  disabled?: boolean;
 }
 
 /**
  * The 3-option pill segmented control for Income / Expense / Transfer.
  */
-export function TypeToggle({ value, onChange }: TypeToggleProps) {
+export function TypeToggle({ value, onChange, disabled }: TypeToggleProps) {
   const options: { value: TransactionType; label: string }[] = [
     { value: "income", label: "Pemasukan" },
     { value: "expense", label: "Pengeluaran" },
@@ -20,7 +21,7 @@ export function TypeToggle({ value, onChange }: TypeToggleProps) {
   ];
 
   return (
-    <div className="flex gap-0.5 rounded-full bg-muted p-1">
+    <div className={`flex gap-0.5 rounded-full bg-muted p-1 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
       {options.map((option) => (
         <button
           key={option.value}

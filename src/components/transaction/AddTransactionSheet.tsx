@@ -32,11 +32,13 @@ import { cn } from "@/lib/utils";
 interface AddTransactionSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialData?: any; // The full transaction object from DB
 }
 
 export function AddTransactionSheet({
   open,
   onOpenChange,
+  initialData,
 }: AddTransactionSheetProps) {
   const { workspaceId } = useActiveWorkspace();
 
@@ -69,9 +71,34 @@ export function AddTransactionSheet({
     { enabled: open && !!workspaceId && type !== "transfer" },
   );
 
+  React.useEffect(() => {
+    if (open) {
+      if (initialData) {
+        setStep("details");
+
+        let txType = initialData.type;
+        if (txType === "transfer_debit" || txType === "transfer_credit") txType = "transfer";
+
+        setType(txType);
+        setAmountStr(Math.abs(Number(initialData.amount)).toString());
+        setName(initialData.name);
+        setDate(new Date(initialData.date).toISOString().split("T")[0]!);
+        setNote(initialData.notes || "");
+
+        if (txType !== "transfer") {
+          setWalletId(initialData.wallet?.id || "");
+          setCategoryId(initialData.category?.id || "");
+        }
+      } else {
+        resetForm();
+      }
+    }
+  }, [open, initialData]);
+
   // Mutations
   const createTransaction = api.transaction.createTransaction.useMutation();
   const createTransfer = api.transaction.createTransfer.useMutation();
+  const updateTransaction = api.transaction.updateTransaction.useMutation();
   const resolveCategory = api.category.resolveCategory.useMutation();
   const utils = api.useUtils();
 
@@ -91,6 +118,7 @@ export function AddTransactionSheet({
   const isSubmitting =
     createTransaction.isPending ||
     createTransfer.isPending ||
+    updateTransaction.isPending ||
     resolveCategory.isPending;
 
   const canSubmit =
@@ -131,35 +159,66 @@ export function AddTransactionSheet({
     const dateISO = new Date(date + "T00:00:00").toISOString();
 
     try {
-      // Resolve default category to real DB id if needed
-      let resolvedCategoryId = categoryId || undefined;
-      if (categoryId && isDefaultCategoryId(categoryId)) {
-        const result = await resolveCategory.mutateAsync({
-          categoryId,
-          workspaceId,
-        });
-        resolvedCategoryId = result.id;
-      }
+      if (initialData) {
+        // Edit mode
+        let resolvedCategoryId = categoryId || undefined;
+        if (categoryId && isDefaultCategoryId(categoryId)) {
+          const result = await resolveCategory.mutateAsync({
+            categoryId,
+            workspaceId,
+          });
+          resolvedCategoryId = result.id;
+        }
 
-      if (type === "transfer") {
-        await createTransfer.mutateAsync({
-          fromWalletId,
-          toWalletId,
-          amount: amountInCents,
-          name: name.trim(),
-          notes: note.trim() || undefined,
-          date: dateISO,
-        });
+        if (type !== "transfer") {
+           await updateTransaction.mutateAsync({
+             id: initialData.id,
+             name: name.trim(),
+             notes: note.trim() || undefined,
+             date: dateISO,
+             amount: amountInCents,
+             categoryId: resolvedCategoryId,
+           });
+        } else {
+           // For transfers, only allow updating name/notes/date to avoid complex balance logic
+           await updateTransaction.mutateAsync({
+             id: initialData.id,
+             name: name.trim(),
+             notes: note.trim() || undefined,
+             date: dateISO,
+           });
+        }
       } else {
-        await createTransaction.mutateAsync({
-          type,
-          amount: amountInCents,
-          name: name.trim(),
-          notes: note.trim() || undefined,
-          date: dateISO,
-          walletId,
-          categoryId: resolvedCategoryId,
-        });
+        // Create mode
+        let resolvedCategoryId = categoryId || undefined;
+        if (categoryId && isDefaultCategoryId(categoryId)) {
+          const result = await resolveCategory.mutateAsync({
+            categoryId,
+            workspaceId,
+          });
+          resolvedCategoryId = result.id;
+        }
+
+        if (type === "transfer") {
+          await createTransfer.mutateAsync({
+            fromWalletId,
+            toWalletId,
+            amount: amountInCents,
+            name: name.trim(),
+            notes: note.trim() || undefined,
+            date: dateISO,
+          });
+        } else {
+          await createTransaction.mutateAsync({
+            type,
+            amount: amountInCents,
+            name: name.trim(),
+            notes: note.trim() || undefined,
+            date: dateISO,
+            walletId,
+            categoryId: resolvedCategoryId,
+          });
+        }
       }
 
       await Promise.all([
@@ -213,7 +272,7 @@ export function AddTransactionSheet({
           <div className="flex flex-1 flex-col">
             {/* Type Toggle */}
             <div className="px-5 pt-4">
-              <TypeToggle value={type} onChange={handleTypeChange} />
+              <TypeToggle value={type} onChange={handleTypeChange} disabled={!!initialData} />
             </div>
 
             {/* Amount Display */}
