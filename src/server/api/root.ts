@@ -1,5 +1,6 @@
 import { createCallerFactory, createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 import { z } from "zod";
+import { env } from "@/env";
 
 import { workspaceRouter } from "./routers/workspace";
 import { walletRouter } from "./routers/wallet";
@@ -24,6 +25,15 @@ export const appRouter = createTRPCRouter({
         greeting: `Hello ${input.name}!`,
       };
     }),
+
+  /**
+   * About / contact info from env
+   */
+  getAboutInfo: publicProcedure.query(() => ({
+    email: env.ABOUT_EMAIL ?? null,
+    whatsapp: env.ABOUT_WHATSAPP ?? null,
+    instagram: env.ABOUT_INSTAGRAM ?? null,
+  })),
 
   /**
    * Workspace router
