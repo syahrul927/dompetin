@@ -21,6 +21,7 @@ export const env = createEnv({
     ABOUT_EMAIL: z.string().optional(),
     ABOUT_WHATSAPP: z.string().optional(),
     ABOUT_INSTAGRAM: z.string().optional(),
+    GEMINI_API_KEY: z.string(),
   },
 
   /**
@@ -47,6 +48,7 @@ export const env = createEnv({
     ABOUT_EMAIL: process.env.ABOUT_EMAIL,
     ABOUT_WHATSAPP: process.env.ABOUT_WHATSAPP,
     ABOUT_INSTAGRAM: process.env.ABOUT_INSTAGRAM,
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
