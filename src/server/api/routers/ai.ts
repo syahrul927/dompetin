@@ -18,12 +18,12 @@ export const aiRouter = createTRPCRouter({
       z.object({
         imageBase64: z.string(),
         mimeType: z.string(),
-      })
+      }),
     )
     .mutation(async ({ input }) => {
       const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash",
+        model: "gemini-2.5-flash",
         generationConfig: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -32,8 +32,16 @@ export const aiRouter = createTRPCRouter({
               success: { type: SchemaType.BOOLEAN },
               amount: { type: SchemaType.NUMBER, nullable: true },
               name: { type: SchemaType.STRING, nullable: true },
-              date: { type: SchemaType.STRING, nullable: true, description: "Date in YYYY-MM-DD format" },
-              type: { type: SchemaType.STRING, enum: ["expense", "income"], format: "enum" },
+              date: {
+                type: SchemaType.STRING,
+                nullable: true,
+                description: "Date in YYYY-MM-DD format",
+              },
+              type: {
+                type: SchemaType.STRING,
+                enum: ["expense", "income"],
+                format: "enum",
+              },
               notes: { type: SchemaType.STRING, nullable: true },
             },
             required: ["success", "amount", "name", "date", "type", "notes"],
@@ -45,6 +53,15 @@ export const aiRouter = createTRPCRouter({
       Analyze this image of a receipt and extract the transaction details.
       Output strict JSON matching the required schema.
       If it is not a readable receipt, set success to false.
+
+      For the "notes" field, please generate a formatted multi-line list of all items purchased with their quantities and prices. Also include any tax, service charge, discount applied, subtotal, and total amount.
+      Example format:
+      1x Nasi Goreng - Rp 25.000
+      2x Es Teh - Rp 10.000
+      Subtotal - Rp 35.000
+      Tax (10%) - Rp 3.500
+      Discount - -Rp 5.000
+      Total - Rp 33.500
       `;
 
       try {

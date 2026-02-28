@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { TypeToggle } from "./TypeToggle";
 import { AmountInput } from "./AmountInput";
 import { FormRow } from "@/components/shared/FormRow";
@@ -530,13 +531,11 @@ export function AddTransactionSheet({
                 </div>
 
                 {/* Note */}
-                <Input
+                <Textarea
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  onKeyDown={handleInputKeyDown}
                   placeholder="Catatan (opsional)"
-                  enterKeyHint="done"
-                  className="h-12 rounded-2xl border-border"
+                  className="min-h-24 rounded-2xl border-border resize-none"
                 />
               </div>
             </div>
