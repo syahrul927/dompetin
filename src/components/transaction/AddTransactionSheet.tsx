@@ -19,7 +19,8 @@ import { CategorySelectDrawer } from "./CategorySelectDrawer";
 import { useActiveWorkspace } from "@/components/providers/workspace-provider";
 import { api } from "@/trpc/react";
 import { isDefaultCategoryId } from "@/lib/default-categories";
-import { ArrowDown, ArrowLeft, Loader2, CalendarIcon } from "lucide-react";
+import { compressImage } from "@/lib/image";
+import { ArrowDown, ArrowLeft, Loader2, CalendarIcon, Camera } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
@@ -68,6 +69,44 @@ export function AddTransactionSheet({
     { workspaceId },
     { enabled: open && !!workspaceId },
   );
+
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const scanMutation = api.ai.scanReceipt.useMutation();
+  const [isScanning, setIsScanning] = useState(false);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsScanning(true);
+      const compressedBase64 = await compressImage(file);
+      const result = await scanMutation.mutateAsync({
+        imageBase64: compressedBase64,
+        mimeType: file.type || "image/jpeg",
+      });
+
+      if (result.success) {
+        if (result.amount) setAmountStr(result.amount.toString());
+        if (result.name) setName(result.name);
+        if (result.date) setDate(result.date);
+        if (result.type) setType(result.type);
+        if (result.notes) setNote(result.notes);
+
+        // Move to details step to review
+        setStep("details");
+      } else {
+        alert(result.notes || "Gagal membaca struk");
+      }
+    } catch (error) {
+      console.error("Scan error:", error);
+      alert("Terjadi kesalahan saat memindai struk");
+    } finally {
+      setIsScanning(false);
+      // Reset input so the same file can be selected again
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const { data: categories } = api.category.getCategories.useQuery(
     { workspaceId, type: type as "income" | "expense" },
@@ -297,11 +336,39 @@ export function AddTransactionSheet({
 
         {step === "amount" ? (
           /* ============ STEP 1: Amount Entry ============ */
-          <div className="flex flex-1 flex-col">
+          <div className="flex flex-1 flex-col relative">
             {/* Type Toggle */}
             <div className="px-5 pt-4">
               <TypeToggle value={type} onChange={handleTypeChange} disabled={!!initialData} />
             </div>
+
+            {/* Scan Receipt Button */}
+            {!initialData && (
+              <div className="flex justify-center mt-4 px-5">
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full gap-2 border-primary text-primary hover:bg-primary/10 transition-colors"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isScanning || scanMutation.isPending}
+                >
+                  {isScanning || scanMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Camera className="h-4 w-4" />
+                  )}
+                  Scan Struk
+                </Button>
+              </div>
+            )}
 
             {/* Amount Display */}
             <AmountInput value={amount} />
