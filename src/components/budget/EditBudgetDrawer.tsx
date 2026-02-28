@@ -9,7 +9,6 @@ import { AmountInput } from "@/components/transaction/AmountInput";
 import { Numpad } from "@/components/shared/Numpad";
 import { api } from "@/trpc/react";
 import { Loader2, Trash2 } from "lucide-react";
-import { getCategoryIcon } from "@/lib/category-icons";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -86,8 +85,6 @@ export function EditBudgetDrawer({ open, onOpenChange, budget }: Props) {
       console.error(e);
     }
   };
-
-  const Icon = getCategoryIcon(budget.icon);
 
   return (
     <>

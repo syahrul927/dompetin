@@ -4,7 +4,6 @@ import { db } from "@/server/db";
 
 import {
   budget as budgetSchema,
-  category as categorySchema,
   transaction,
   workspaceMember,
 } from "@/server/db/schema";
@@ -39,12 +38,6 @@ export const budgetRouter = {
       if (!member) {
         throw new Error("Access denied to this workspace");
       }
-
-      // Build query conditions
-      const conditions = [
-        eq(budgetSchema.isActive, input.isActive),
-        eq(budgetSchema.workspaceId, input.workspaceId)
-      ];
 
       const now = new Date();
       const currentYear = now.getFullYear();

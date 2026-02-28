@@ -69,8 +69,8 @@ export function CreateWorkspaceDrawer({
             <Label className="text-xs font-medium text-muted-foreground">
               Ikon
             </Label>
-            <div className="flex gap-2">
-              {["💼", "🏠", "🏢", "💰", "🎯", "👥"].map((emoji) => (
+            <div className="flex flex-wrap gap-2">
+              {["💼", "🏠", "🏢", "💰", "🎯", "👥", "✈️", "🍔", "🎮", "🚗", "🎓", "🏥", "🛍️", "🐶", "👶", "🎉"].map((emoji) => (
                 <button
                   key={emoji}
                   onClick={() => setIcon(emoji)}

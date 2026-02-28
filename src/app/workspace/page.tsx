@@ -76,7 +76,7 @@ export default function WorkspacePage() {
                 <Skeleton key={i} className="h-[72px] rounded-[20px]" />
               ))}
 
-            {!isLoadingWorkspaces && workspaces?.map((workspace, index) => (
+            {!isLoadingWorkspaces && workspaces?.map((workspace) => (
               <div
                 key={workspace.id}
               >
