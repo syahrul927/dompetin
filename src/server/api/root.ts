@@ -8,6 +8,7 @@ import { transactionRouter } from "./routers/transaction";
 import { categoryRouter } from "./routers/category";
 import { budgetRouter } from "./routers/budget";
 import { goalRouter } from "./routers/goal";
+import { aiRouter } from "./routers/ai";
 
 /**
  * This is the primary router for your server.
@@ -64,6 +65,11 @@ export const appRouter = createTRPCRouter({
    * Goal router
    */
   goal: goalRouter,
+
+  /**
+   * AI router
+   */
+  ai: aiRouter,
 });
 
 // export type definition of API
