@@ -45,8 +45,8 @@ export async function compressImage(
           reject(new Error("Failed to extract base64 data"));
         }
       };
-      img.onerror = (error) => reject(error);
+      img.onerror = () => reject(new Error("Failed to load image"));
     };
-    reader.onerror = (error) => reject(error);
+    reader.onerror = () => reject(new Error("Failed to read file"));
   });
 }
