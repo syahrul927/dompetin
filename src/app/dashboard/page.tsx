@@ -5,7 +5,7 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { BalanceHeroCard } from "@/components/dashboard/BalanceHeroCard";
 import { SummaryCards } from "@/components/dashboard/SummaryCards";
 import { WalletScroll } from "@/components/dashboard/WalletScroll";
-import { TrendChart } from "@/components/dashboard/TrendChart";
+import { ExpenseCategoryChart } from "@/components/dashboard/ExpenseCategoryChart";
 import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
 import { useActiveWorkspace } from "@/components/providers/workspace-provider";
 import { authClient } from "@/server/better-auth/client";
@@ -55,9 +55,16 @@ export default function DashboardPage() {
       { enabled: hasWorkspace },
     );
 
-  // Dashboard summary (monthly income/expense + trend)
+  // Dashboard summary (monthly income/expense)
   const { data: summary, isLoading: summaryLoading } =
     api.transaction.getDashboardSummary.useQuery(
+      { workspaceId },
+      { enabled: hasWorkspace },
+    );
+
+  // Expense by category (donut chart)
+  const { data: expenseByCategory, isLoading: categoryLoading } =
+    api.transaction.getExpenseByCategory.useQuery(
       { workspaceId },
       { enabled: hasWorkspace },
     );
@@ -151,9 +158,10 @@ export default function DashboardPage() {
           isLoading={walletsLoading}
         />
 
-        <TrendChart
-          data={summary?.trend ?? []}
-          isLoading={summaryLoading}
+        <ExpenseCategoryChart
+          categories={expenseByCategory?.categories ?? []}
+          grandTotal={expenseByCategory?.grandTotal ?? 0}
+          isLoading={categoryLoading}
         />
 
         <RecentTransactions

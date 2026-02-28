@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { api } from "@/trpc/react";
+import { authClient } from "@/server/better-auth/client";
 
 interface WorkspaceContextType {
   workspaceId: string;
@@ -29,11 +30,14 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("dompetin_workspace_id", id);
   };
 
+  const { data: session } = authClient.useSession();
+  const isAuthenticated = !!session?.user;
+
   // Auto-select: fetch workspaces when no workspace is stored
   const { data: workspaces } = api.workspace.getWorkspaces.useQuery(
     {},
     {
-      enabled: isMounted && !workspaceId,
+      enabled: isMounted && !workspaceId && isAuthenticated,
       retry: false, // don't retry on auth errors (login/register pages)
     },
   );

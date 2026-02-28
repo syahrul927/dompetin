@@ -640,6 +640,71 @@ export const transactionRouter = {
     }),
 
   /**
+   * Get expense breakdown by category for the current month
+   */
+  getExpenseByCategory: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.string().uuid(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const member = await db.query.workspaceMember.findFirst({
+        where: and(
+          eq(workspaceMember.workspaceId, input.workspaceId),
+          eq(workspaceMember.userId, ctx.session.user.id),
+        ),
+      });
+
+      if (!member) {
+        throw new Error("Access denied to this workspace");
+      }
+
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
+
+      const result = await db
+        .select({
+          categoryId: transaction.categoryId,
+          categoryName: categorySchema.name,
+          categoryIcon: categorySchema.icon,
+          categoryColor: categorySchema.color,
+          total: sql<string>`COALESCE(SUM(ABS(${transaction.amount})), 0)`,
+        })
+        .from(transaction)
+        .leftJoin(categorySchema, eq(transaction.categoryId, categorySchema.id))
+        .where(
+          and(
+            eq(transaction.workspaceId, input.workspaceId),
+            eq(transaction.type, "expense"),
+            isNull(transaction.deletedAt),
+            sql`EXTRACT(YEAR FROM ${transaction.date}::timestamp) = ${currentYear}`,
+            sql`EXTRACT(MONTH FROM ${transaction.date}::timestamp) = ${currentMonth}`,
+          ),
+        )
+        .groupBy(
+          transaction.categoryId,
+          categorySchema.name,
+          categorySchema.icon,
+          categorySchema.color,
+        )
+        .orderBy(sql`SUM(ABS(${transaction.amount})) DESC`);
+
+      const categories = result.map((r) => ({
+        id: r.categoryId,
+        name: r.categoryName ?? "Tanpa Kategori",
+        icon: r.categoryIcon ?? "📦",
+        color: r.categoryColor ?? "#94a3b8",
+        total: parseFloat(r.total),
+      }));
+
+      const grandTotal = categories.reduce((sum, c) => sum + c.total, 0);
+
+      return { categories, grandTotal };
+    }),
+
+  /**
    * Delete a transaction (Hard delete + balance reversion)
    */
   deleteTransaction: protectedProcedure
