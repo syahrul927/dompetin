@@ -57,9 +57,10 @@ export function AddTransactionSheet({
   const [toWalletId, setToWalletId] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [budgetId, setBudgetId] = useState("");
-  const [date, setDate] = useState(
-    new Date().toISOString().split("T")[0]!,
-  );
+  const [date, setDate] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  });
   const [note, setNote] = useState("");
 
   // Queries for display names
@@ -89,7 +90,8 @@ export function AddTransactionSheet({
         setType(txType);
         setAmountStr(Math.abs(Number(initialData.amount)).toString());
         setName(initialData.name as string);
-        setDate(new Date(initialData.date as string).toISOString().split("T")[0]!);
+        const d = new Date(initialData.date as string);
+        setDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
         setNote((initialData.notes as string) || "");
 
         if (txType !== "transfer") {
@@ -176,7 +178,7 @@ export function AddTransactionSheet({
     setIsLocked(true);
 
     const amountInCents = amount * 100;
-    const dateISO = new Date(date + "T00:00:00").toISOString();
+    const dateISO = new Date(date + "T00:00:00Z").toISOString();
 
     try {
       if (initialData) {
