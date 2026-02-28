@@ -19,7 +19,7 @@ export function BalanceHeroCard({
   activeWalletCount,
   isLoading,
 }: BalanceHeroCardProps) {
-  const [showBalance, setShowBalance] = useState(true);
+  const [showBalance, setShowBalance] = useState(false);
 
   // Load preference from localStorage on mount
   useEffect(() => {
@@ -38,7 +38,7 @@ export function BalanceHeroCard({
 
   if (isLoading) {
     return (
-      <Card className="relative overflow-hidden rounded-[20px] border-primary/20 bg-gradient-to-br from-card to-[#FDF4F5] p-5 dark:bg-primary/10 dark:bg-none">
+      <Card className="border-primary/20 from-card dark:bg-primary/10 relative overflow-hidden rounded-[20px] bg-gradient-to-br to-[#FDF4F5] p-5 dark:bg-none">
         <div
           className="absolute inset-0 hidden opacity-[0.03] dark:block"
           style={{
@@ -48,7 +48,7 @@ export function BalanceHeroCard({
           }}
         />
         <div className="relative z-10">
-          <p className="text-xs text-muted-foreground">Total Saldo</p>
+          <p className="text-muted-foreground text-xs">Total Saldo</p>
           <Skeleton className="mt-1 h-9 w-48" />
           <Skeleton className="mt-1 h-4 w-32" />
         </div>
@@ -57,7 +57,7 @@ export function BalanceHeroCard({
   }
 
   return (
-    <Card className="relative overflow-hidden rounded-[20px] border-primary/20 bg-gradient-to-br from-card to-[#FDF4F5] p-5 dark:bg-primary/10 dark:bg-none">
+    <Card className="border-primary/20 from-card dark:bg-primary/10 relative overflow-hidden rounded-[20px] bg-gradient-to-br to-[#FDF4F5] p-5 dark:bg-none">
       <div
         className="absolute inset-0 hidden opacity-[0.03] dark:block"
         style={{
@@ -68,19 +68,19 @@ export function BalanceHeroCard({
       />
       <div className="relative z-10">
         <div className="flex items-center justify-between">
-          <p className="text-xs text-muted-foreground">Total Saldo</p>
+          <p className="text-muted-foreground text-xs">Total Saldo</p>
           <button
             onClick={toggleBalance}
-            className="rounded-full p-1.5 text-muted-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+            className="text-muted-foreground rounded-full p-1.5 transition-colors hover:bg-black/5 dark:hover:bg-white/10"
             aria-label={showBalance ? "Sembunyikan saldo" : "Tampilkan saldo"}
           >
             {showBalance ? <Eye size={16} /> : <EyeOff size={16} />}
           </button>
         </div>
-        <h2 className="text-[32px] font-bold tracking-tight text-foreground flex items-center h-[48px]">
+        <h2 className="text-foreground flex h-[48px] items-center text-[32px] font-bold tracking-tight">
           {showBalance ? formatIDR(totalBalance) : "Rp •••••••••"}
         </h2>
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="text-muted-foreground mt-1 text-xs">
           {activeWalletCount} dompet aktif
         </p>
       </div>
