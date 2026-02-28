@@ -64,6 +64,16 @@ export function AddTransactionSheet({
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   });
   const [note, setNote] = useState("");
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize the textarea based on its scrollHeight whenever `note` changes
+  React.useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = "auto";
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    }
+  }, [note]);
 
   // Queries for display names
   const { data: wallets } = api.wallet.getWallets.useQuery(
@@ -337,7 +347,7 @@ export function AddTransactionSheet({
 
         {step === "amount" ? (
           /* ============ STEP 1: Amount Entry ============ */
-          <div className="flex flex-1 flex-col relative">
+          <div className="flex flex-col relative h-[calc(100vh-120px)] sm:h-auto">
             {/* Type Toggle */}
             <div className="px-5 pt-4">
               <TypeToggle value={type} onChange={handleTypeChange} disabled={!!initialData} />
@@ -380,7 +390,7 @@ export function AddTransactionSheet({
             </div>
 
             {/* Continue Button */}
-            <div className="px-5 pb-8 pt-2">
+            <div className="px-5 pb-8 pt-2 mt-auto">
               <Button
                 onClick={() => setStep("details")}
                 className="h-12 w-full rounded-full bg-primary text-base font-semibold text-white hover:bg-primary"
@@ -392,9 +402,9 @@ export function AddTransactionSheet({
           </div>
         ) : (
           /* ============ STEP 2: Detail Fields ============ */
-          <div className="flex flex-1 flex-col">
+          <div className="flex flex-col h-[calc(100vh-120px)] sm:h-auto">
             {/* Amount Summary (compact) */}
-            <div className="flex items-center justify-between border-b px-5 py-3">
+            <div className="flex items-center justify-between border-b px-5 py-3 shrink-0">
               <span className="text-sm text-muted-foreground">Jumlah</span>
               <button
                 type="button"
@@ -406,7 +416,7 @@ export function AddTransactionSheet({
             </div>
 
             {/* Form Fields */}
-            <div className="flex-1 overflow-y-auto px-5 py-4">
+            <div className="flex-1 overflow-y-auto px-5 py-4 pb-12">
               <div className="space-y-3">
                 {/* Name */}
                 <Input
@@ -532,16 +542,17 @@ export function AddTransactionSheet({
 
                 {/* Note */}
                 <Textarea
+                  ref={textareaRef}
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   placeholder="Catatan (opsional)"
-                  className="min-h-24 rounded-2xl border-border resize-none"
+                  className="min-h-24 rounded-2xl border-border resize-none overflow-hidden"
                 />
               </div>
             </div>
 
             {/* Submit */}
-            <div className="border-t px-5 pb-8 pt-3">
+            <div className="border-t px-5 pb-8 pt-3 shrink-0 bg-background sticky bottom-0 z-10">
               <Button
                 onClick={handleSubmit}
                 className="h-12 w-full rounded-full bg-primary text-base font-semibold text-white hover:bg-primary"
