@@ -1,7 +1,15 @@
 import React from "react";
-import { MoreHorizontal, ArrowRightLeft } from "lucide-react";
+import { ArrowRightLeft } from "lucide-react";
 import { getCategoryIcon } from "@/lib/category-icons";
 import { AmountText } from "./AmountText";
+import {
+  Item,
+  ItemMedia,
+  ItemContent,
+  ItemTitle,
+  ItemDescription,
+  ItemActions,
+} from "@/components/ui/item";
 
 interface TransactionRowProps {
   transaction: {
@@ -21,7 +29,7 @@ interface TransactionRowProps {
 
 /**
  * A single transaction list item.
- * Used in Dashboard recent transactions, Wallet Detail, and transaction lists.
+ * Uses shadcn Item components for consistent layout.
  */
 export function TransactionRow({ transaction, onClick }: TransactionRowProps) {
   const isTransfer =
@@ -32,47 +40,60 @@ export function TransactionRow({ transaction, onClick }: TransactionRowProps) {
     ? ArrowRightLeft
     : transaction.categoryIcon
       ? getCategoryIcon(transaction.categoryIcon)
-      : MoreHorizontal;
+      : getCategoryIcon("tag");
 
   const iconBgColor = transaction.categoryColor
     ? `${transaction.categoryColor}20`
     : undefined;
   const iconColor = transaction.categoryColor ?? undefined;
 
+  // First word only for author name
+  const shortAuthor = transaction.authorName?.split(" ")[0];
+
+  // Build secondary info: Category · Wallet
+  const secondaryParts = [transaction.category];
+  if (transaction.walletContext) {
+    secondaryParts.push(transaction.walletContext);
+  }
+
   return (
-    <button
-      onClick={onClick}
-      className="flex w-full items-center gap-3 py-3 text-left transition-colors hover:bg-muted/50"
-    >
-      <div
-        className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[14px] bg-muted"
-        style={
-          iconBgColor && iconColor
-            ? { backgroundColor: iconBgColor, color: iconColor }
-            : undefined
-        }
+    <Item size="sm" asChild>
+      <button
+        onClick={onClick}
+        className="w-full text-left transition-colors hover:bg-accent/50"
       >
-        <Icon
-          size={18}
-          className={iconBgColor ? "" : "text-muted-foreground"}
-        />
-      </div>
-      <div className="flex-1">
-        <p className="text-sm font-medium text-foreground">
-          {transaction.name}
-        </p>
-        <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">
-          {transaction.authorName ? `${transaction.authorName} · ` : ""}
-          {transaction.category}
-          {transaction.walletContext ? ` · ${transaction.walletContext}` : ""}
-          {` · ${transaction.date}`}
-        </p>
-      </div>
-      <AmountText
-        amount={transaction.amount}
-        type={transaction.type}
-        size="md"
-      />
-    </button>
+        <ItemMedia
+          variant="icon"
+          className="rounded-[10px]"
+          style={
+            iconBgColor && iconColor
+              ? { backgroundColor: iconBgColor, color: iconColor, borderColor: "transparent" }
+              : undefined
+          }
+        >
+          <Icon size={16} />
+        </ItemMedia>
+        <ItemContent className="gap-0.5">
+          <ItemTitle className="truncate text-sm">{transaction.name}</ItemTitle>
+          <ItemDescription className="line-clamp-1 text-xs">
+            {secondaryParts.join(" · ")}
+          </ItemDescription>
+        </ItemContent>
+        <ItemActions>
+          <div className="flex flex-col items-end gap-0.5">
+            <AmountText
+              amount={transaction.amount}
+              type={transaction.type}
+              size="sm"
+            />
+            {shortAuthor && (
+              <span className="text-[10px] text-muted-foreground">
+                {shortAuthor}
+              </span>
+            )}
+          </div>
+        </ItemActions>
+      </button>
+    </Item>
   );
 }
