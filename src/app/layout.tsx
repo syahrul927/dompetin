@@ -74,16 +74,18 @@ export default function RootLayout({
         <meta name="theme-color" content="#E8A0A8" />
 
         {/* Apple Splash Screens — portrait only */}
-        {/* iPhone 6/7/8 */}
+        {/* iPhone 5/5S/SE (1st gen) */}
+        <link rel="apple-touch-startup-image" href="/splash/splash-640x1136.png" media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+        {/* iPhone 6/7/8/SE (2nd/3rd gen) */}
         <link rel="apple-touch-startup-image" href="/splash/splash-750x1334.png" media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
-        {/* iPhone X/XS/11 Pro */}
-        <link rel="apple-touch-startup-image" href="/splash/splash-1125x2436.png" media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
         {/* iPhone 6+/7+/8+ */}
         <link rel="apple-touch-startup-image" href="/splash/splash-1242x2208.png" media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+        {/* iPhone X/XS/11 Pro */}
+        <link rel="apple-touch-startup-image" href="/splash/splash-1125x2436.png" media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
         {/* iPhone XR/11 */}
-        <link rel="apple-touch-startup-image" href="/splash/splash-1242x2208.png" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+        <link rel="apple-touch-startup-image" href="/splash/splash-828x1792.png" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
         {/* iPhone XS Max/11 Pro Max */}
-        <link rel="apple-touch-startup-image" href="/splash/splash-1242x2208.png" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+        <link rel="apple-touch-startup-image" href="/splash/splash-1242x2688.png" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
         {/* iPhone 12/13/14 */}
         <link rel="apple-touch-startup-image" href="/splash/splash-1170x2532.png" media="screen and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
         {/* iPhone 14 Pro/15/15 Pro */}
@@ -96,6 +98,8 @@ export default function RootLayout({
         <link rel="apple-touch-startup-image" href="/splash/splash-1536x2048.png" media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
         {/* iPad Pro 10.5" */}
         <link rel="apple-touch-startup-image" href="/splash/splash-1668x2224.png" media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+        {/* iPad Pro 11" */}
+        <link rel="apple-touch-startup-image" href="/splash/splash-1668x2388.png" media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
         {/* iPad Pro 12.9" */}
         <link rel="apple-touch-startup-image" href="/splash/splash-2048x2732.png" media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
       </head>
