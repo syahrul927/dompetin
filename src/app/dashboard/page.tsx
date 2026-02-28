@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { BalanceHeroCard } from "@/components/dashboard/BalanceHeroCard";
 import { SummaryCards } from "@/components/dashboard/SummaryCards";
@@ -22,25 +22,17 @@ export default function DashboardPage() {
 
   const hasWorkspace = !!workspaceId;
 
-  // Background sync for legacy data
-  const syncBalances = api.wallet.syncBalances.useMutation();
-  const utils = api.useUtils();
-
+  // Balance visibility toggle (shared across BalanceHeroCard + WalletScroll)
+  const [showBalance, setShowBalance] = useState(false);
   useEffect(() => {
-    if (hasWorkspace) {
-      syncBalances.mutate(
-        { workspaceId },
-        {
-          onSuccess: () => {
-            // Silently invalidate to refresh UI if balances changed
-            void utils.wallet.getWallets.invalidate();
-            void utils.transaction.getDashboardSummary.invalidate();
-          },
-        }
-      );
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workspaceId, hasWorkspace]); // Only run when workspace changes
+    const stored = localStorage.getItem("dompetin_show_balance");
+    if (stored !== null) setShowBalance(stored === "true");
+  }, []);
+  const toggleBalance = () => {
+    const next = !showBalance;
+    setShowBalance(next);
+    localStorage.setItem("dompetin_show_balance", String(next));
+  };
 
   // Workspace info
   const { data: workspaceData } = api.workspace.getWorkspace.useQuery(
@@ -145,6 +137,8 @@ export default function DashboardPage() {
           totalBalance={totalBalance}
           activeWalletCount={activeWalletCount}
           isLoading={walletsLoading}
+          showBalance={showBalance}
+          onToggleBalance={toggleBalance}
         />
 
         <SummaryCards
@@ -156,6 +150,7 @@ export default function DashboardPage() {
         <WalletScroll
           wallets={wallets ?? []}
           isLoading={walletsLoading}
+          showBalance={showBalance}
         />
 
         <ExpenseCategoryChart

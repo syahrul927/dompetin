@@ -24,12 +24,13 @@ interface Wallet {
 interface WalletScrollProps {
   wallets: Wallet[];
   isLoading?: boolean;
+  showBalance?: boolean;
 }
 
 /**
  * Horizontal scrollable list of wallet cards on the Dashboard.
  */
-export function WalletScroll({ wallets, isLoading }: WalletScrollProps) {
+export function WalletScroll({ wallets, isLoading, showBalance }: WalletScrollProps) {
   const router = useRouter();
 
   const handleWalletClick = (walletId: string) => {
@@ -81,6 +82,7 @@ export function WalletScroll({ wallets, isLoading }: WalletScrollProps) {
               type: WALLET_TYPE_LABELS[w.type] ?? w.type,
               balance: typeof w.balance === "string" ? parseFloat(w.balance) : w.balance,
             }}
+            showBalance={showBalance}
             onClick={() => handleWalletClick(w.id)}
           />
         ))}

@@ -9,13 +9,14 @@ interface WalletCardProps {
     balance: number;
   };
   isSelected?: boolean;
+  showBalance?: boolean;
   onClick?: () => void;
 }
 
 /**
  * Wallet card component used in Dashboard wallet horizontal scroll section.
  */
-export function WalletCard({ wallet, isSelected, onClick }: WalletCardProps) {
+export function WalletCard({ wallet, isSelected, showBalance = true, onClick }: WalletCardProps) {
   return (
     <button
       onClick={onClick}
@@ -29,7 +30,7 @@ export function WalletCard({ wallet, isSelected, onClick }: WalletCardProps) {
         {wallet.name}
       </p>
       <p className="mt-1 text-[15px] font-bold text-foreground">
-        {formatIDR(wallet.balance)}
+        {showBalance ? formatIDR(wallet.balance) : "•••••••"}
       </p>
       <p className="mt-2 text-xs font-semibold text-foreground">
         {wallet.type}

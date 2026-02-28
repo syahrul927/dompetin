@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { and, eq, desc, sql, isNull, or } from "drizzle-orm";
+import { and, eq, desc, sql, isNull } from "drizzle-orm";
 import { db } from "@/server/db";
 
 import {
@@ -270,37 +270,27 @@ export const walletRouter = {
         where: eq(wallet.workspaceId, input.workspaceId),
       });
 
-      // 3. For each wallet, recalculate its balance
+      // 3. For each wallet, recalculate its balance from transactions
+      //    NOTE: This does NOT account for initialBalance (no separate column).
+      //    Only use this for wallets where initialBalance was 0.
       for (const w of wallets) {
-        // Calculate true balance from transactions
         const txResult = await db.select({
           income: sql<number>`COALESCE(SUM(CASE WHEN ${transactionSchema.type} = 'income' THEN ABS(${transactionSchema.amount}::numeric) ELSE 0 END), 0)`,
           expense: sql<number>`COALESCE(SUM(CASE WHEN ${transactionSchema.type} = 'expense' THEN ABS(${transactionSchema.amount}::numeric) ELSE 0 END), 0)`,
-          transferIn: sql<number>`COALESCE(SUM(CASE WHEN ${transactionSchema.type} = 'transfer' AND ${transactionSchema.toWalletId} = ${w.id} THEN ABS(${transactionSchema.amount}::numeric) ELSE 0 END), 0)`,
-          transferOut: sql<number>`COALESCE(SUM(CASE WHEN ${transactionSchema.type} = 'transfer' AND ${transactionSchema.walletId} = ${w.id} THEN ABS(${transactionSchema.amount}::numeric) ELSE 0 END), 0)`
+          transferNet: sql<number>`COALESCE(SUM(CASE WHEN ${transactionSchema.type} = 'transfer' THEN ${transactionSchema.amount}::numeric ELSE 0 END), 0)`,
         }).from(transactionSchema)
         .where(
           and(
             eq(transactionSchema.workspaceId, input.workspaceId),
+            eq(transactionSchema.walletId, w.id),
             isNull(transactionSchema.deletedAt),
-            or(
-              eq(transactionSchema.walletId, w.id),
-              eq(transactionSchema.toWalletId, w.id)
-            )
           )
         );
 
         const stats = txResult[0];
         if (!stats) continue;
 
-        // The true balance = initial balance + income - expense + transferIn - transferOut
-        // Since we don't have initial_balance separated, and since legacy transactions
-        // didn't update wallet.balance at all, we assume the original initial balance was 0.
-        // Or if it was >0, it's currently stored in w.balance, but it might have been
-        // updated by newer transactions. The safest approach for total recalculation
-        // assuming no transactions updated the balance properly until recently:
-        // Assume initial = 0.
-        const newBalance = Number(stats.income) - Number(stats.expense) + Number(stats.transferIn) - Number(stats.transferOut);
+        const newBalance = Number(stats.income) - Number(stats.expense) + Number(stats.transferNet);
 
         // Update the wallet
         await db.update(wallet)

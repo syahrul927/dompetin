@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { formatIDR } from "@/lib/formatIDR";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -8,6 +8,8 @@ interface BalanceHeroCardProps {
   totalBalance: number;
   activeWalletCount: number;
   isLoading?: boolean;
+  showBalance: boolean;
+  onToggleBalance: () => void;
 }
 
 /**
@@ -18,23 +20,9 @@ export function BalanceHeroCard({
   totalBalance,
   activeWalletCount,
   isLoading,
+  showBalance,
+  onToggleBalance,
 }: BalanceHeroCardProps) {
-  const [showBalance, setShowBalance] = useState(false);
-
-  // Load preference from localStorage on mount
-  useEffect(() => {
-    const storedPref = localStorage.getItem("dompetin_show_balance");
-    if (storedPref !== null) {
-      setShowBalance(storedPref === "true");
-    }
-  }, []);
-
-  // Save preference when changed
-  const toggleBalance = () => {
-    const newValue = !showBalance;
-    setShowBalance(newValue);
-    localStorage.setItem("dompetin_show_balance", String(newValue));
-  };
 
   if (isLoading) {
     return (
@@ -70,7 +58,7 @@ export function BalanceHeroCard({
         <div className="flex items-center justify-between">
           <p className="text-muted-foreground text-xs">Total Saldo</p>
           <button
-            onClick={toggleBalance}
+            onClick={onToggleBalance}
             className="text-muted-foreground rounded-full p-1.5 transition-colors hover:bg-black/5 dark:hover:bg-white/10"
             aria-label={showBalance ? "Sembunyikan saldo" : "Tampilkan saldo"}
           >
