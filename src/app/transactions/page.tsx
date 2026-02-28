@@ -48,7 +48,9 @@ export default function TransactionsPage() {
   const [limit, setLimit] = useState(PAGE_SIZE);
 
   // Sheets state
-  const [actionTx, setActionTx] = useState<Record<string, unknown> | null>(null);
+  const [actionTx, setActionTx] = useState<Record<string, unknown> | null>(
+    null,
+  );
   const [editTx, setEditTx] = useState<Record<string, unknown> | null>(null);
 
   const { data, isLoading } = api.transaction.getTransactions.useQuery(
@@ -73,7 +75,8 @@ export default function TransactionsPage() {
     return {
       id: tx.id,
       name: tx.name,
-      category: tx.category?.name ?? (tx.type === "transfer" ? "Transfer" : "Lainnya"),
+      category:
+        tx.category?.name ?? (tx.type === "transfer" ? "Transfer" : "Lainnya"),
       categoryIcon: tx.category?.icon,
       categoryColor: tx.category?.color,
       date: formatTransactionDate(tx.date),
@@ -111,7 +114,7 @@ export default function TransactionsPage() {
             {[1, 2, 3].map((g) => (
               <div key={g}>
                 <Skeleton className="mb-2 h-4 w-32" />
-                <Card className="divide-y divide-border rounded-[20px] px-4">
+                <Card className="divide-border divide-y rounded-[20px] px-4">
                   {[1, 2, 3].map((i) => (
                     <div key={i} className="flex items-center gap-3 py-3">
                       <Skeleton className="h-10 w-10 rounded-[14px]" />
@@ -131,7 +134,7 @@ export default function TransactionsPage() {
         {/* Empty state */}
         {!isLoading && transactions.length === 0 && (
           <Card className="mt-6 rounded-[20px] p-8 text-center">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               Belum ada transaksi. Tap tombol + untuk menambahkan transaksi
               pertama Anda!
             </p>
@@ -145,12 +148,16 @@ export default function TransactionsPage() {
               const txs = grouped[dateKey]!;
               return (
                 <div key={dateKey}>
-                  <h3 className="mb-2 text-[13px] font-semibold text-muted-foreground">
+                  <h3 className="text-muted-foreground mb-2 text-[13px] font-semibold">
                     {formatGroupDate(dateKey)}
                   </h3>
-                  <Card className="divide-y divide-border rounded-[20px] px-4">
+                  <Card className="divide-border divide-y rounded-[20px] px-2">
                     {txs.map((tx) => (
-                      <TransactionRow key={tx.id} transaction={tx} onClick={() => setActionTx(tx)} />
+                      <TransactionRow
+                        key={tx.id}
+                        transaction={tx}
+                        onClick={() => setActionTx(tx)}
+                      />
                     ))}
                   </Card>
                 </div>
@@ -163,7 +170,7 @@ export default function TransactionsPage() {
                 <Button
                   variant="ghost"
                   onClick={() => setLimit((prev) => prev + PAGE_SIZE)}
-                  className="text-sm font-medium text-primary"
+                  className="text-primary text-sm font-medium"
                 >
                   <Loader2
                     size={16}
@@ -182,9 +189,15 @@ export default function TransactionsPage() {
         onOpenChange={(open) => {
           if (!open) setActionTx(null);
         }}
-        transaction={actionTx as React.ComponentProps<typeof TransactionActionSheet>["transaction"]}
+        transaction={
+          actionTx as React.ComponentProps<
+            typeof TransactionActionSheet
+          >["transaction"]
+        }
         currentUserId={session?.user?.id}
-        onEdit={() => setEditTx((actionTx?.raw as Record<string, unknown>) ?? null)}
+        onEdit={() =>
+          setEditTx((actionTx?.raw as Record<string, unknown>) ?? null)
+        }
       />
 
       <AddTransactionSheet

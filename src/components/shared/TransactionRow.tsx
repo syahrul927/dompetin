@@ -74,7 +74,7 @@ export function TransactionRow({ transaction, onClick }: TransactionRowProps) {
           <Icon size={16} />
         </ItemMedia>
         <ItemContent className="gap-0.5">
-          <ItemTitle className="truncate text-sm">{transaction.name}</ItemTitle>
+          <ItemTitle className="text-sm">{transaction.name}</ItemTitle>
           <ItemDescription className="line-clamp-1 text-xs">
             {secondaryParts.join(" · ")}
           </ItemDescription>
