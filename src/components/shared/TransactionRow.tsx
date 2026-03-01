@@ -1,6 +1,7 @@
 import React from "react";
 import { ArrowRightLeft } from "lucide-react";
 import { getCategoryIcon } from "@/lib/category-icons";
+import { formatIDR } from "@/lib/formatIDR";
 import { AmountText } from "./AmountText";
 import {
   Item,
@@ -57,16 +58,6 @@ export function TransactionRow({ transaction, onClick }: TransactionRowProps) {
     secondaryParts.push(transaction.walletContext);
   }
 
-  // Add fee info if exists
-  if (transaction.feeAmount && transaction.feeAmount > 0) {
-    const formattedFee = new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(transaction.feeAmount);
-    secondaryParts.push(`+ Biaya: ${formattedFee}`);
-  }
-
   return (
     <Item size="sm" asChild>
       <button
@@ -97,6 +88,11 @@ export function TransactionRow({ transaction, onClick }: TransactionRowProps) {
               type={transaction.type}
               size="sm"
             />
+            {transaction.feeAmount && transaction.feeAmount > 0 && (
+              <span className="mt-0.5 text-[10px] text-muted-foreground">
+                (+ Biaya {formatIDR(transaction.feeAmount)})
+              </span>
+            )}
             {shortAuthor && (
               <span className="text-[10px] text-muted-foreground">
                 {shortAuthor}
