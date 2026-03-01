@@ -815,7 +815,7 @@ export const transactionRouter = {
             // ALWAYS use the debit leg's walletId as source and credit leg's walletId as destination
             // to ensure consistency regardless of which leg the user clicked to edit.
             const newWalletId = input.walletId ?? debitLeg?.walletId ?? existingTx.walletId;
-            const newToWalletId = input.toWalletId ?? creditLeg?.walletId ?? (existingTx.toWalletId as string);
+            const newToWalletId = input.toWalletId ?? creditLeg?.walletId ?? existingTx.toWalletId!;
 
             // Update Main Legs
             if (debitLeg) {
