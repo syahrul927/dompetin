@@ -495,7 +495,7 @@ export const transactionRouter = {
           walletId: input.toWalletId,
           toWalletId: input.fromWalletId,
           transferId,
-          workspaceId,
+          workspaceId: currentToWallet.workspaceId,
           createdBy: ctx.session.user.id,
         });
 
