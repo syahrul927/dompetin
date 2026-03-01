@@ -28,6 +28,8 @@ export const transactionRouter = {
         type: z.enum(["income", "expense", "transfer"]).optional(),
         startDate: z.string().datetime().optional(),
         endDate: z.string().datetime().optional(),
+        month: z.number().min(1).max(12).optional(),
+        year: z.number().min(2000).optional(),
         limit: z.number().min(1).max(100).default(20),
         offset: z.number().min(0).default(0),
       }),
@@ -105,6 +107,13 @@ export const transactionRouter = {
             conditions.push(dateFilter);
           }
         }
+      }
+
+      if (input.month && input.year) {
+        const startOfMonth = new Date(Date.UTC(input.year, input.month - 1, 1));
+        const endOfMonth = new Date(Date.UTC(input.year, input.month, 0));
+        conditions.push(gte(transaction.date, startOfMonth));
+        conditions.push(lte(transaction.date, endOfMonth));
       }
 
       // Fetch transactions with pagination
@@ -573,13 +582,7 @@ export const transactionRouter = {
       }
 
       const now = new Date();
-
-      // We want TODAY's data for the summary, not the whole month
-      const startOfDay = new Date(now);
-      startOfDay.setHours(0, 0, 0, 0);
-
-      const endOfDay = new Date(now);
-      endOfDay.setHours(23, 59, 59, 999);
+      const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
       // Monthly totals
       const monthlyResult = await db
@@ -592,15 +595,12 @@ export const transactionRouter = {
           and(
             eq(transaction.workspaceId, input.workspaceId),
             isNull(transaction.deletedAt),
-            gte(transaction.date, startOfDay),
-            lte(transaction.date, endOfDay)
+            eq(transaction.date, today)
           ),
         );
 
       // Daily expense trend for last 7 days
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
-      sevenDaysAgo.setHours(0, 0, 0, 0);
+      const sevenDaysAgo = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 6));
 
       const dailyTrend = await db
         .select({
@@ -614,7 +614,7 @@ export const transactionRouter = {
             eq(transaction.type, "expense"),
             isNull(transaction.deletedAt),
             gte(transaction.date, sevenDaysAgo),
-            lte(transaction.date, now),
+            lte(transaction.date, today),
           ),
         )
         .groupBy(sql`TO_CHAR(${transaction.date}::timestamp, 'YYYY-MM-DD')`)
@@ -627,10 +627,10 @@ export const transactionRouter = {
 
       for (let i = 0; i < 7; i++) {
         const d = new Date(sevenDaysAgo);
-        d.setDate(d.getDate() + i);
+        d.setUTCDate(d.getUTCDate() + i);
         const key = d.toISOString().split("T")[0]!;
         trend.push({
-          label: dayNames[d.getDay()]!,
+          label: dayNames[d.getUTCDay()]!,
           value: trendMap.get(key) ?? 0,
         });
       }
@@ -651,6 +651,8 @@ export const transactionRouter = {
     .input(
       z.object({
         workspaceId: z.string().uuid(),
+        month: z.number().min(1).max(12).optional(),
+        year: z.number().min(2000).optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -666,8 +668,8 @@ export const transactionRouter = {
       }
 
       const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth() + 1;
+      const currentYear = input.year ?? now.getUTCFullYear();
+      const currentMonth = input.month ?? now.getUTCMonth() + 1;
 
       const result = await db
         .select({
