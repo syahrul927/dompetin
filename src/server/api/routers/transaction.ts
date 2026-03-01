@@ -650,9 +650,9 @@ export const transactionRouter = {
         throw new Error("Only the creator can edit this transaction");
       }
 
-      // If transfer, block updates to specific fields
-      if (existingTx.type === "transfer" && (input.amount !== undefined || input.categoryId !== undefined)) {
-        throw new Error("Cannot update amount or category for transfer transactions");
+      // If transfer, block updates to category (transfers don't have categories)
+      if (existingTx.type === "transfer" && input.categoryId !== undefined) {
+        throw new Error("Cannot update category for transfer transactions");
       }
 
       // Verify category belongs to workspace if provided
@@ -676,8 +676,13 @@ export const transactionRouter = {
       };
 
       if (input.amount !== undefined) {
-        // Convert from cents to decimal format
-        updateData.amount = (input.amount / 100).toFixed(2);
+        // For transfer debit legs, we store negative amounts
+        const isTransferDebit =
+          existingTx.type === "transfer" && Number(existingTx.amount) < 0;
+        updateData.amount = (isTransferDebit
+          ? -(input.amount / 100)
+          : input.amount / 100
+        ).toFixed(2);
       }
 
       if (input.name !== undefined) {
@@ -700,15 +705,83 @@ export const transactionRouter = {
         updateData.budgetId = input.budgetId;
       }
 
-      // Update transaction
+      // Update transaction and wallet balance atomically
       const updated = await db.transaction(async (tx) => {
+        // 1. Handle amount update and wallet balance adjustments
+        if (input.amount !== undefined) {
+          const newAmountNum = input.amount / 100;
+
+          if (
+            existingTx.type === "transfer" &&
+            existingTx.transferId &&
+            !existingTx.isTransferFee
+          ) {
+            // Update BOTH main legs of the transfer
+            const linkedTxs = await tx.query.transaction.findMany({
+              where: and(
+                eq(transaction.transferId, existingTx.transferId),
+                eq(transaction.isTransferFee, false),
+              ),
+            });
+
+            for (const linked of linkedTxs) {
+              const oldAmount = Number(linked.amount);
+              const isDebit = oldAmount < 0;
+              const newSignedAmount = isDebit ? -newAmountNum : newAmountNum;
+              const diff = newSignedAmount - oldAmount;
+
+              // Update leg amount
+              await tx
+                .update(transaction)
+                .set({ amount: newSignedAmount.toFixed(2), updatedAt: new Date() })
+                .where(eq(transaction.id, linked.id));
+
+              // Update wallet balance
+              const wallet = await tx.query.wallet.findFirst({
+                where: eq(walletSchema.id, linked.walletId),
+              });
+              if (wallet) {
+                await tx
+                  .update(walletSchema)
+                  .set({
+                    balance: (Number(wallet.balance) + diff).toFixed(2),
+                    updatedAt: new Date(),
+                  })
+                  .where(eq(walletSchema.id, wallet.id));
+              }
+            }
+          } else {
+            // Regular transaction (income, expense, or transfer fee)
+            const oldAmount = Number(existingTx.amount);
+            const diff = newAmountNum - oldAmount;
+
+            const wallet = await tx.query.wallet.findFirst({
+              where: eq(walletSchema.id, existingTx.walletId),
+            });
+            if (wallet) {
+              const balanceChange =
+                existingTx.type === "expense" ? -diff : diff;
+              await tx
+                .update(walletSchema)
+                .set({
+                  balance: (Number(wallet.balance) + balanceChange).toFixed(2),
+                  updatedAt: new Date(),
+                })
+                .where(eq(walletSchema.id, wallet.id));
+            }
+          }
+        }
+
+        // 2. Perform the main update for fields other than amount (amount already handled for transfers)
+        // If it was a transfer main leg, we already updated the amount above.
+        // We still need to update other fields (name, notes, date, categoryId, budgetId).
         const [result] = await tx
           .update(transaction)
           .set(updateData)
           .where(eq(transaction.id, input.id))
           .returning();
 
-        // If this is part of a transfer, sync name, notes, and date to other legs
+        // 3. Handle other field syncing for transfers (name, notes, date)
         if (existingTx.transferId) {
           const syncData: Record<string, unknown> = {
             updatedAt: new Date(),
@@ -716,37 +789,22 @@ export const transactionRouter = {
           if (input.notes !== undefined) syncData.notes = input.notes;
           if (input.date !== undefined) syncData.date = new Date(input.date);
 
-          // Update other legs (excluding the fee name)
-          await tx
-            .update(transaction)
-            .set(syncData)
-            .where(
-              and(
-                eq(transaction.transferId, existingTx.transferId),
-                eq(transaction.isTransferFee, false),
-                sql`${transaction.id} != ${input.id}`,
-              ),
-            );
-
-          // For the fee transaction, sync notes and date, and optionally name with prefix
-          const feeSyncData = { ...syncData };
-          if (input.name !== undefined) {
-            feeSyncData.name = `Biaya Admin Transfer: ${input.name}`;
+          // Sync notes and date to ALL other legs
+          if (Object.keys(syncData).length > 1) {
+            await tx
+              .update(transaction)
+              .set(syncData)
+              .where(
+                and(
+                  eq(transaction.transferId, existingTx.transferId),
+                  sql`${transaction.id} != ${input.id}`,
+                ),
+              );
           }
 
-          await tx
-            .update(transaction)
-            .set(feeSyncData)
-            .where(
-              and(
-                eq(transaction.transferId, existingTx.transferId),
-                eq(transaction.isTransferFee, true),
-                sql`${transaction.id} != ${input.id}`,
-              ),
-            );
-
-          // If updating name for a main leg, update name for the other main leg too
-          if (input.name !== undefined) {
+          // Sync name if updating from a main leg
+          if (input.name !== undefined && !existingTx.isTransferFee) {
+            // Update other main leg
             await tx
               .update(transaction)
               .set({ name: input.name, updatedAt: new Date() })
@@ -755,6 +813,20 @@ export const transactionRouter = {
                   eq(transaction.transferId, existingTx.transferId),
                   eq(transaction.isTransferFee, false),
                   sql`${transaction.id} != ${input.id}`,
+                ),
+              );
+
+            // Update fee leg name with prefix
+            await tx
+              .update(transaction)
+              .set({
+                name: `Biaya Admin Transfer: ${input.name}`,
+                updatedAt: new Date(),
+              })
+              .where(
+                and(
+                  eq(transaction.transferId, existingTx.transferId),
+                  eq(transaction.isTransferFee, true),
                 ),
               );
           }
