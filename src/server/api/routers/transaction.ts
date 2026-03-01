@@ -920,19 +920,38 @@ export const transactionRouter = {
       const incomeChange = calculateChange(income, prevIncome);
       const expenseChange = calculateChange(expense, prevExpense);
 
-      // Fill in all days of the month for the chart
+      // Aggregate into weekly buckets for the chart
       const cashflowMap = new Map(dailyCashflow.map(d => [d.day, { income: parseFloat(d.income), expense: parseFloat(d.expense) }]));
       const cashflow: { date: string, income: number, expense: number }[] = [];
 
       const daysInMonth = endOfMonth.getUTCDate();
+
+      let currentWeek = 1;
+      let currentWeekIncome = 0;
+      let currentWeekExpense = 0;
+
       for (let i = 1; i <= daysInMonth; i++) {
         const dateObj = new Date(Date.UTC(input.year, input.month - 1, i));
         const key = dateObj.toISOString().split('T')[0]!;
         const data = cashflowMap.get(key) ?? { income: 0, expense: 0 };
-        cashflow.push({
-          date: key,
-          ...data
-        });
+
+        currentWeekIncome += data.income;
+        currentWeekExpense += data.expense;
+
+        // Group into 7-day buckets, or remainder for the last week
+        if (i % 7 === 0 || i === daysInMonth) {
+          const startDay = (currentWeek - 1) * 7 + 1;
+          const endDay = i;
+
+          cashflow.push({
+            date: startDay === endDay ? `${startDay}` : `${startDay}-${endDay}`,
+            income: currentWeekIncome,
+            expense: currentWeekExpense
+          });
+          currentWeek++;
+          currentWeekIncome = 0;
+          currentWeekExpense = 0;
+        }
       }
 
       return {

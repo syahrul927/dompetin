@@ -50,8 +50,8 @@ export function TransactionAnalytics({ data, isLoading }: TransactionAnalyticsPr
 
   const chartData = cashflow.map((d) => ({
     ...d,
-    // Short date for X axis
-    shortDate: d.date.split("-")[2],
+    // Use date directly as the short date for weekly view (e.g., "Minggu 1")
+    shortDate: d.date,
   }));
 
   return (
@@ -111,7 +111,7 @@ export function TransactionAnalytics({ data, isLoading }: TransactionAnalyticsPr
 
       {/* Cashflow Chart */}
       <Card className="rounded-[20px] p-4">
-        <h3 className="text-sm font-semibold mb-4">Arus Kas Harian</h3>
+        <h3 className="text-sm font-semibold mb-4">Arus Kas Mingguan</h3>
         <div className="h-48 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
@@ -141,8 +141,8 @@ export function TransactionAnalytics({ data, isLoading }: TransactionAnalyticsPr
                 contentStyle={{ borderRadius: '12px', border: '1px solid var(--color-border)', backgroundColor: 'var(--color-card)', color: 'var(--color-card-foreground)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                 itemStyle={{ color: 'var(--color-foreground)' }}
               />
-              <Bar dataKey="income" fill="var(--color-primary)" radius={[4, 4, 0, 0]} name="Masuk" barSize={12} />
-              <Bar dataKey="expense" fill="var(--color-destructive)" radius={[4, 4, 0, 0]} name="Keluar" barSize={12} />
+              <Bar dataKey="income" fill="var(--color-primary)" radius={[4, 4, 0, 0]} name="Masuk" barSize={24} />
+              <Bar dataKey="expense" fill="var(--color-destructive)" radius={[4, 4, 0, 0]} name="Keluar" barSize={24} />
             </BarChart>
           </ResponsiveContainer>
         </div>
