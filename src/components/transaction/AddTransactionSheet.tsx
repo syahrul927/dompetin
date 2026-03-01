@@ -30,6 +30,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 interface AddTransactionSheetProps {
@@ -64,6 +66,8 @@ export function AddTransactionSheet({
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   });
   const [note, setNote] = useState("");
+  const [hasFee, setHasFee] = useState(false);
+  const [feeAmountStr, setFeeAmountStr] = useState("0");
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
 
   // Auto-resize the textarea based on its scrollHeight whenever `note` changes
@@ -144,6 +148,15 @@ export function AddTransactionSheet({
         setDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
         setNote((initialData.notes as string) || "");
 
+        // Handle transfer fee in edit mode
+        if (txType === "transfer" && (initialData as { feeAmount?: number }).feeAmount) {
+          setHasFee(true);
+          setFeeAmountStr((initialData as { feeAmount: number }).feeAmount.toString());
+        } else {
+          setHasFee(false);
+          setFeeAmountStr("0");
+        }
+
         if (txType !== "transfer") {
           setWalletId((initialData.wallet as { id: string })?.id || "");
           setCategoryId((initialData.category as { id: string })?.id || "");
@@ -208,6 +221,8 @@ export function AddTransactionSheet({
     setBudgetId("");
     setDate(new Date().toISOString().split("T")[0]!);
     setNote("");
+    setHasFee(false);
+    setFeeAmountStr("0");
     setIsLocked(false);
   };
 
@@ -273,10 +288,12 @@ export function AddTransactionSheet({
         }
 
         if (type === "transfer") {
+          const feeAmountInCents = hasFee ? (parseInt(feeAmountStr, 10) || 0) * 100 : undefined;
           await createTransfer.mutateAsync({
             fromWalletId,
             toWalletId,
             amount: amountInCents,
+            feeAmount: feeAmountInCents,
             name: name.trim(),
             notes: note.trim() || undefined,
             date: dateISO,
@@ -539,6 +556,33 @@ export function AddTransactionSheet({
                     </PopoverContent>
                   </Popover>
                 </div>
+
+                {/* Transfer Fee Toggle */}
+                {type === "transfer" && !initialData && (
+                  <div className="space-y-3 pt-1">
+                    <div className="flex items-center justify-between px-1">
+                      <Label htmlFor="has-fee" className="text-sm font-medium">Biaya Transfer</Label>
+                      <Switch
+                        id="has-fee"
+                        checked={hasFee}
+                        onCheckedChange={setHasFee}
+                      />
+                    </div>
+                    {hasFee && (
+                      <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+                        <Input
+                          type="number"
+                          inputMode="numeric"
+                          value={feeAmountStr === "0" ? "" : feeAmountStr}
+                          onChange={(e) => setFeeAmountStr(e.target.value.replace(/[^0-9]/g, ""))}
+                          onKeyDown={handleInputKeyDown}
+                          placeholder="Masukkan biaya admin"
+                          className="h-12 rounded-2xl border-border"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Note */}
                 <Textarea

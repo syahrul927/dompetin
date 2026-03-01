@@ -74,6 +74,7 @@ export default function WalletDetailPage() {
       month: "short",
     }),
     amount: parseFloat(tx.amount),
+    feeAmount: (tx as { feeAmount?: number }).feeAmount,
     type: tx.type as "income" | "expense" | "transfer_debit" | "transfer_credit",
     walletContext: getWalletContext(
       tx.type,

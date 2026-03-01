@@ -13,6 +13,7 @@ interface Transaction {
   category: string;
   date: string;
   amount: number;
+  feeAmount?: number;
   type: "income" | "expense" | "transfer_debit" | "transfer_credit";
   authorName?: string;
   createdBy?: { id: string; name: string } | null;

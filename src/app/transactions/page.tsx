@@ -120,6 +120,7 @@ export default function TransactionsPage() {
       date: formatTransactionDate(tx.date),
       rawDate: new Date(tx.date),
       amount,
+      feeAmount: (tx as { feeAmount?: number }).feeAmount,
       type,
       walletContext: getWalletContext(tx.type, tx.wallet, tx.toWallet),
       authorName: tx.createdBy?.name,

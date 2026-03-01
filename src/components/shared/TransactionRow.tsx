@@ -21,6 +21,7 @@ interface TransactionRowProps {
     date: string;
     amount: number;
     type: "income" | "expense" | "transfer_debit" | "transfer_credit";
+    feeAmount?: number;
     authorName?: string;
     walletContext?: string;
   };
@@ -54,6 +55,16 @@ export function TransactionRow({ transaction, onClick }: TransactionRowProps) {
   const secondaryParts = [transaction.category];
   if (transaction.walletContext) {
     secondaryParts.push(transaction.walletContext);
+  }
+
+  // Add fee info if exists
+  if (transaction.feeAmount && transaction.feeAmount > 0) {
+    const formattedFee = new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(transaction.feeAmount);
+    secondaryParts.push(`+ Biaya: ${formattedFee}`);
   }
 
   return (

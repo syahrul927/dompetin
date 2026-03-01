@@ -97,6 +97,7 @@ export default function DashboardPage() {
         categoryColor: tx.category?.color,
         date: dateStr,
         amount,
+        feeAmount: (tx as { feeAmount?: number }).feeAmount,
         type,
         walletContext: getWalletContext(
           tx.type,
