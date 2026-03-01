@@ -634,6 +634,8 @@ export const transactionRouter = {
         categoryId: z.string().uuid().optional(),
         budgetId: z.string().uuid().optional(),
         feeAmount: z.number().nonnegative().optional(),
+        walletId: z.string().uuid().optional(),
+        toWalletId: z.string().uuid().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -668,6 +670,28 @@ export const transactionRouter = {
 
         if (categoryCheck.workspaceId !== existingTx.workspaceId) {
           throw new Error("Category must belong to the same workspace as transaction");
+        }
+      }
+
+      // Verify wallet(s) belong to workspace if provided
+      if (input.walletId) {
+        const walletCheck = await db.query.wallet.findFirst({
+          where: eq(walletSchema.id, input.walletId),
+        });
+        if (!walletCheck || walletCheck.workspaceId !== existingTx.workspaceId) {
+          throw new Error("Wallet not found or access denied");
+        }
+      }
+
+      if (input.toWalletId) {
+        if (existingTx.type !== "transfer") {
+          throw new Error("Destination wallet can only be set for transfers");
+        }
+        const walletCheck = await db.query.wallet.findFirst({
+          where: eq(walletSchema.id, input.toWalletId),
+        });
+        if (!walletCheck || walletCheck.workspaceId !== existingTx.workspaceId) {
+          throw new Error("Destination wallet not found or access denied");
         }
       }
 
@@ -706,214 +730,275 @@ export const transactionRouter = {
         updateData.budgetId = input.budgetId;
       }
 
+      if (input.walletId !== undefined) {
+        updateData.walletId = input.walletId;
+      }
+
+      if (input.toWalletId !== undefined) {
+        updateData.toWalletId = input.toWalletId;
+      }
+
       // Update transaction and wallet balance atomically
       const updated = await db.transaction(async (tx) => {
-        // 1. Handle amount update and wallet balance adjustments
-        if (input.amount !== undefined) {
-          const newAmountNum = input.amount / 100;
+        // 1. Handle Balance Reversions (Before updating records)
+        // Only if amount, walletId, toWalletId, or feeAmount is changing
+        const isAmountChanging = input.amount !== undefined;
+        const isWalletChanging = input.walletId !== undefined;
+        const isToWalletChanging = input.toWalletId !== undefined;
+        const isFeeChanging = input.feeAmount !== undefined;
 
-          if (
-            existingTx.type === "transfer" &&
-            existingTx.transferId &&
-            !existingTx.isTransferFee
-          ) {
-            // Update BOTH main legs of the transfer
-            const linkedTxs = await tx.query.transaction.findMany({
+        if (
+          isAmountChanging ||
+          isWalletChanging ||
+          isToWalletChanging ||
+          isFeeChanging
+        ) {
+          if (existingTx.type === "transfer" && existingTx.transferId) {
+            // TRANSFER RECONCILIATION
+            // Fetch all current legs
+            const legs = await tx.query.transaction.findMany({
               where: and(
                 eq(transaction.transferId, existingTx.transferId),
-                eq(transaction.isTransferFee, false),
+                isNull(transaction.deletedAt),
               ),
             });
 
-            for (const linked of linkedTxs) {
-              const oldAmount = Number(linked.amount);
-              const isDebit = oldAmount < 0;
-              const newSignedAmount = isDebit ? -newAmountNum : newAmountNum;
-              const diff = newSignedAmount - oldAmount;
+            const debitLeg = legs.find(
+              (l) => !l.isTransferFee && Number(l.amount) < 0,
+            );
+            const creditLeg = legs.find(
+              (l) => !l.isTransferFee && Number(l.amount) > 0,
+            );
+            const feeLeg = legs.find((l) => l.isTransferFee);
 
-              // Update leg amount
-              await tx
-                .update(transaction)
-                .set({ amount: newSignedAmount.toFixed(2), updatedAt: new Date() })
-                .where(eq(transaction.id, linked.id));
-
-              // Update wallet balance
-              const wallet = await tx.query.wallet.findFirst({
-                where: eq(walletSchema.id, linked.walletId),
+            // Revert Old Balances
+            if (debitLeg) {
+              const w = await tx.query.wallet.findFirst({
+                where: eq(walletSchema.id, debitLeg.walletId),
               });
-              if (wallet) {
+              if (w) {
+                const totalDebit =
+                  Math.abs(Number(debitLeg.amount)) +
+                  (feeLeg ? Math.abs(Number(feeLeg.amount)) : 0);
                 await tx
                   .update(walletSchema)
                   .set({
-                    balance: (Number(wallet.balance) + diff).toFixed(2),
+                    balance: (Number(w.balance) + totalDebit).toFixed(2),
                     updatedAt: new Date(),
                   })
-                  .where(eq(walletSchema.id, wallet.id));
+                  .where(eq(walletSchema.id, w.id));
               }
             }
-          } else {
-            // Regular transaction (income, expense, or transfer fee)
-            const oldAmount = Number(existingTx.amount);
-            const diff = newAmountNum - oldAmount;
+            if (creditLeg) {
+              const w = await tx.query.wallet.findFirst({
+                where: eq(walletSchema.id, creditLeg.walletId),
+              });
+              if (w) {
+                await tx
+                  .update(walletSchema)
+                  .set({
+                    balance: (
+                      Number(w.balance) - Math.abs(Number(creditLeg.amount))
+                    ).toFixed(2),
+                    updatedAt: new Date(),
+                  })
+                  .where(eq(walletSchema.id, w.id));
+              }
+            }
 
-            const wallet = await tx.query.wallet.findFirst({
-              where: eq(walletSchema.id, existingTx.walletId),
+            // Update Records
+            const newAmountNum =
+              input.amount !== undefined
+                ? input.amount / 100
+                : Math.abs(Number(debitLeg?.amount ?? existingTx.amount));
+
+            // ALWAYS use the debit leg's walletId as source and credit leg's walletId as destination
+            // to ensure consistency regardless of which leg the user clicked to edit.
+            const newWalletId = input.walletId ?? debitLeg?.walletId ?? existingTx.walletId;
+            const newToWalletId = input.toWalletId ?? creditLeg?.walletId ?? (existingTx.toWalletId as string);
+
+            // Update Main Legs
+            if (debitLeg) {
+              await tx
+                .update(transaction)
+                .set({
+                  amount: (-newAmountNum).toFixed(2),
+                  walletId: newWalletId,
+                  toWalletId: newToWalletId,
+                  updatedAt: new Date(),
+                })
+                .where(eq(transaction.id, debitLeg.id));
+            }
+            if (creditLeg) {
+              await tx
+                .update(transaction)
+                .set({
+                  amount: newAmountNum.toFixed(2),
+                  walletId: newToWalletId as string,
+                  toWalletId: newWalletId,
+                  updatedAt: new Date(),
+                })
+                .where(eq(transaction.id, creditLeg.id));
+            }
+
+            // Handle Fee Leg
+            let finalFeeAmount = feeLeg ? Math.abs(Number(feeLeg.amount)) : 0;
+            if (input.feeAmount !== undefined) {
+              finalFeeAmount = input.feeAmount / 100;
+
+              if (feeLeg) {
+                if (finalFeeAmount > 0) {
+                  await tx
+                    .update(transaction)
+                    .set({
+                      amount: finalFeeAmount.toFixed(2),
+                      walletId: newWalletId,
+                      updatedAt: new Date(),
+                    })
+                    .where(eq(transaction.id, feeLeg.id));
+                } else {
+                  await tx
+                    .update(transaction)
+                    .set({
+                      deletedAt: new Date(),
+                      deletedBy: ctx.session.user.id,
+                      updatedAt: new Date(),
+                    })
+                    .where(eq(transaction.id, feeLeg.id));
+                }
+              } else if (finalFeeAmount > 0) {
+                // Create new fee leg
+                const workspaceId = existingTx.workspaceId;
+                let feeCategory = await tx.query.category.findFirst({
+                  where: and(
+                    eq(categorySchema.workspaceId, workspaceId),
+                    eq(categorySchema.name, "Biaya Transfer"),
+                    eq(categorySchema.type, "expense"),
+                  ),
+                });
+
+                if (!feeCategory) {
+                  const [newCat] = await tx
+                    .insert(categorySchema)
+                    .values({
+                      id: crypto.randomUUID(),
+                      workspaceId,
+                      name: "Biaya Transfer",
+                      type: "expense",
+                      icon: "receipt",
+                      color: "#f43f5e",
+                      userId: ctx.session.user.id,
+                    })
+                    .returning();
+                  feeCategory = newCat;
+                }
+
+                await tx.insert(transaction).values({
+                  id: crypto.randomUUID(),
+                  type: "expense",
+                  amount: finalFeeAmount.toFixed(2),
+                  name: `Biaya Admin Transfer: ${input.name ?? existingTx.name}`,
+                  date: input.date ? new Date(input.date) : existingTx.date,
+                  notes: input.notes ?? existingTx.notes,
+                  walletId: newWalletId,
+                  transferId: existingTx.transferId,
+                  categoryId: feeCategory!.id,
+                  isTransferFee: true,
+                  workspaceId,
+                  createdBy: ctx.session.user.id,
+                });
+              }
+            } else if (feeLeg) {
+              // Sync fee leg wallet even if amount didn't change
+              await tx
+                .update(transaction)
+                .set({ walletId: newWalletId, updatedAt: new Date() })
+                .where(eq(transaction.id, feeLeg.id));
+            }
+
+            // Apply New Balances
+            const wSource = await tx.query.wallet.findFirst({
+              where: eq(walletSchema.id, newWalletId),
             });
-            if (wallet) {
-              const balanceChange =
-                existingTx.type === "expense" ? -diff : diff;
+            if (wSource) {
               await tx
                 .update(walletSchema)
                 .set({
-                  balance: (Number(wallet.balance) + balanceChange).toFixed(2),
+                  balance: (
+                    Number(wSource.balance) -
+                    (newAmountNum + finalFeeAmount)
+                  ).toFixed(2),
                   updatedAt: new Date(),
                 })
-                .where(eq(walletSchema.id, wallet.id));
+                .where(eq(walletSchema.id, wSource.id));
             }
-          }
-        }
 
-        // 1.5 Handle feeAmount update for transfers
-        if (
-          input.feeAmount !== undefined &&
-          existingTx.transferId &&
-          !existingTx.isTransferFee
-        ) {
-          const newFeeAmountNum = input.feeAmount / 100;
-          const feeLeg = await tx.query.transaction.findFirst({
-            where: and(
-              eq(transaction.transferId, existingTx.transferId),
-              eq(transaction.isTransferFee, true),
-              isNull(transaction.deletedAt),
-            ),
-          });
-
-          if (feeLeg) {
-            const oldFeeAmount = Number(feeLeg.amount);
-            const diff = newFeeAmountNum - oldFeeAmount;
-
-            if (newFeeAmountNum > 0) {
-              // Update existing fee
-              await tx
-                .update(transaction)
-                .set({ amount: newFeeAmountNum.toFixed(2), updatedAt: new Date() })
-                .where(eq(transaction.id, feeLeg.id));
-
-              // Adjust wallet balance
-              const wallet = await tx.query.wallet.findFirst({
-                where: eq(walletSchema.id, feeLeg.walletId),
-              });
-              if (wallet) {
-                await tx
-                  .update(walletSchema)
-                  .set({
-                    balance: (Number(wallet.balance) - diff).toFixed(2),
-                    updatedAt: new Date(),
-                  })
-                  .where(eq(walletSchema.id, wallet.id));
-              }
-            } else {
-              // Fee reduced to 0, soft delete it
-              await tx
-                .update(transaction)
-                .set({
-                  deletedAt: new Date(),
-                  deletedBy: ctx.session.user.id,
-                  updatedAt: new Date(),
-                })
-                .where(eq(transaction.id, feeLeg.id));
-
-              // Revert wallet balance
-              const wallet = await tx.query.wallet.findFirst({
-                where: eq(walletSchema.id, feeLeg.walletId),
-              });
-              if (wallet) {
-                await tx
-                  .update(walletSchema)
-                  .set({
-                    balance: (Number(wallet.balance) + oldFeeAmount).toFixed(2),
-                    updatedAt: new Date(),
-                  })
-                  .where(eq(walletSchema.id, wallet.id));
-              }
-            }
-          } else if (newFeeAmountNum > 0) {
-            // Create new fee leg
-            // Find the source wallet (debit leg)
-            const debitLeg = await tx.query.transaction.findFirst({
-              where: and(
-                eq(transaction.transferId, existingTx.transferId),
-                eq(transaction.isTransferFee, false),
-                sql`${transaction.amount}::numeric < 0`,
-              ),
+            const wDest = await tx.query.wallet.findFirst({
+              where: eq(walletSchema.id, newToWalletId as string),
             });
+            if (wDest) {
+              await tx
+                .update(walletSchema)
+                .set({
+                  balance: (Number(wDest.balance) + newAmountNum).toFixed(2),
+                  updatedAt: new Date(),
+                })
+                .where(eq(walletSchema.id, wDest.id));
+            }
+          } else {
+            // REGULAR TRANSACTION RECONCILIATION
+            const oldWalletId = existingTx.walletId;
+            const newWalletId = input.walletId ?? oldWalletId;
+            const oldAmount = Number(existingTx.amount);
+            const newAmount =
+              input.amount !== undefined
+                ? input.amount / 100
+                : Math.abs(oldAmount);
 
-            if (debitLeg) {
-              const workspaceId = debitLeg.workspaceId;
+            // Revert old wallet
+            const wOld = await tx.query.wallet.findFirst({
+              where: eq(walletSchema.id, oldWalletId),
+            });
+            if (wOld) {
+              const reversion = existingTx.type === "expense" ? oldAmount : -oldAmount;
+              await tx
+                .update(walletSchema)
+                .set({
+                  balance: (Number(wOld.balance) + reversion).toFixed(2),
+                  updatedAt: new Date(),
+                })
+                .where(eq(walletSchema.id, oldWalletId));
+            }
 
-              // Find or create fee category
-              let feeCategory = await tx.query.category.findFirst({
-                where: and(
-                  eq(categorySchema.workspaceId, workspaceId),
-                  eq(categorySchema.name, "Biaya Transfer"),
-                  eq(categorySchema.type, "expense"),
-                ),
-              });
-
-              if (!feeCategory) {
-                const [newCat] = await tx
-                  .insert(categorySchema)
-                  .values({
-                    id: crypto.randomUUID(),
-                    workspaceId,
-                    name: "Biaya Transfer",
-                    type: "expense",
-                    icon: "receipt",
-                    color: "#f43f5e",
-                    userId: ctx.session.user.id,
-                  })
-                  .returning();
-                feeCategory = newCat;
-              }
-
-              await tx.insert(transaction).values({
-                id: crypto.randomUUID(),
-                type: "expense",
-                amount: newFeeAmountNum.toFixed(2),
-                name: `Biaya Admin Transfer: ${input.name ?? existingTx.name}`,
-                date: input.date ? new Date(input.date) : existingTx.date,
-                notes: input.notes ?? existingTx.notes,
-                walletId: debitLeg.walletId,
-                transferId: existingTx.transferId,
-                categoryId: feeCategory!.id,
-                isTransferFee: true,
-                workspaceId,
-                createdBy: ctx.session.user.id,
-              });
-
-              // Update wallet balance
-              const wallet = await tx.query.wallet.findFirst({
-                where: eq(walletSchema.id, debitLeg.walletId),
-              });
-              if (wallet) {
-                await tx
-                  .update(walletSchema)
-                  .set({
-                    balance: (Number(wallet.balance) - newFeeAmountNum).toFixed(2),
-                    updatedAt: new Date(),
-                  })
-                  .where(eq(walletSchema.id, wallet.id));
-              }
+            // Apply new wallet
+            const wNew = await tx.query.wallet.findFirst({
+              where: eq(walletSchema.id, newWalletId),
+            });
+            if (wNew) {
+              const applyAmount = existingTx.type === "expense" ? -newAmount : newAmount;
+              await tx
+                .update(walletSchema)
+                .set({
+                  balance: (Number(wNew.balance) + applyAmount).toFixed(2),
+                  updatedAt: new Date(),
+                })
+                .where(eq(walletSchema.id, newWalletId));
             }
           }
         }
 
-        // 2. Perform the main update for fields other than amount (amount already handled for transfers)
-        // If it was a transfer main leg, we already updated the amount above.
-        // We still need to update other fields (name, notes, date, categoryId, budgetId).
+        // 2. Perform the main update for fields other than amount/wallet (if already handled)
+        // We use updateData but remove amount/walletId/toWalletId if it's a transfer to avoid double update
+        const finalUpdateData = { ...updateData };
+        if (existingTx.type === "transfer") {
+          delete finalUpdateData.amount;
+          delete finalUpdateData.walletId;
+          delete finalUpdateData.toWalletId;
+        }
+
         const [result] = await tx
           .update(transaction)
-          .set(updateData)
+          .set(finalUpdateData)
           .where(eq(transaction.id, input.id))
           .returning();
 
@@ -934,6 +1019,7 @@ export const transactionRouter = {
                 and(
                   eq(transaction.transferId, existingTx.transferId),
                   sql`${transaction.id} != ${input.id}`,
+                  isNull(transaction.deletedAt),
                 ),
               );
           }
@@ -949,6 +1035,7 @@ export const transactionRouter = {
                   eq(transaction.transferId, existingTx.transferId),
                   eq(transaction.isTransferFee, false),
                   sql`${transaction.id} != ${input.id}`,
+                  isNull(transaction.deletedAt),
                 ),
               );
 
@@ -963,6 +1050,7 @@ export const transactionRouter = {
                 and(
                   eq(transaction.transferId, existingTx.transferId),
                   eq(transaction.isTransferFee, true),
+                  isNull(transaction.deletedAt),
                 ),
               );
           }
@@ -1159,7 +1247,10 @@ export const transactionRouter = {
       // 3. Database transaction to delete and revert balances
       if (existingTx.transferId) {
         const linkedTxs = await db.query.transaction.findMany({
-          where: eq(transaction.transferId, existingTx.transferId),
+          where: and(
+            eq(transaction.transferId, existingTx.transferId),
+            isNull(transaction.deletedAt),
+          ),
         });
 
         await db.transaction(async (tx) => {
