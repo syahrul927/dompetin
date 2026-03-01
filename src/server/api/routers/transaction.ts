@@ -818,4 +818,131 @@ export const transactionRouter = {
 
       return { success: true };
     }),
+
+  /**
+   * Get transaction analytics (income/expense totals and daily trend)
+   */
+  getTransactionAnalytics: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.string().uuid(),
+        month: z.number().min(1).max(12),
+        year: z.number().min(2000),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      // Verify workspace access
+      const member = await db.query.workspaceMember.findFirst({
+        where: and(
+          eq(workspaceMember.workspaceId, input.workspaceId),
+          eq(workspaceMember.userId, ctx.session.user.id),
+        ),
+      });
+
+      if (!member) {
+        throw new Error("Access denied to this workspace");
+      }
+
+      // Current month boundaries
+      const startOfMonth = new Date(Date.UTC(input.year, input.month - 1, 1));
+      const endOfMonth = new Date(Date.UTC(input.year, input.month, 0));
+
+      // Previous month boundaries
+      const prevMonthDate = new Date(Date.UTC(input.year, input.month - 2, 1));
+      const startOfPrevMonth = new Date(Date.UTC(prevMonthDate.getUTCFullYear(), prevMonthDate.getUTCMonth(), 1));
+      const endOfPrevMonth = new Date(Date.UTC(prevMonthDate.getUTCFullYear(), prevMonthDate.getUTCMonth() + 1, 0));
+
+      // Query totals for current month
+      const currentTotals = await db
+        .select({
+          income: sql<string>`COALESCE(SUM(CASE WHEN ${transaction.type} = 'income' THEN ${transaction.amount} ELSE 0 END), 0)`,
+          expense: sql<string>`COALESCE(SUM(CASE WHEN ${transaction.type} = 'expense' THEN ABS(${transaction.amount}) ELSE 0 END), 0)`,
+        })
+        .from(transaction)
+        .where(
+          and(
+            eq(transaction.workspaceId, input.workspaceId),
+            isNull(transaction.deletedAt),
+            gte(transaction.date, startOfMonth),
+            lte(transaction.date, endOfMonth),
+          ),
+        );
+
+      // Query totals for previous month
+      const prevTotals = await db
+        .select({
+          income: sql<string>`COALESCE(SUM(CASE WHEN ${transaction.type} = 'income' THEN ${transaction.amount} ELSE 0 END), 0)`,
+          expense: sql<string>`COALESCE(SUM(CASE WHEN ${transaction.type} = 'expense' THEN ABS(${transaction.amount}) ELSE 0 END), 0)`,
+        })
+        .from(transaction)
+        .where(
+          and(
+            eq(transaction.workspaceId, input.workspaceId),
+            isNull(transaction.deletedAt),
+            gte(transaction.date, startOfPrevMonth),
+            lte(transaction.date, endOfPrevMonth),
+          ),
+        );
+
+      // Daily cashflow for current month
+      const dailyCashflow = await db
+        .select({
+          day: sql<string>`TO_CHAR(${transaction.date}::timestamp, 'YYYY-MM-DD')`,
+          income: sql<string>`COALESCE(SUM(CASE WHEN ${transaction.type} = 'income' THEN ${transaction.amount} ELSE 0 END), 0)`,
+          expense: sql<string>`COALESCE(SUM(CASE WHEN ${transaction.type} = 'expense' THEN ABS(${transaction.amount}) ELSE 0 END), 0)`,
+        })
+        .from(transaction)
+        .where(
+          and(
+            eq(transaction.workspaceId, input.workspaceId),
+            isNull(transaction.deletedAt),
+            gte(transaction.date, startOfMonth),
+            lte(transaction.date, endOfMonth),
+          ),
+        )
+        .groupBy(sql`TO_CHAR(${transaction.date}::timestamp, 'YYYY-MM-DD')`)
+        .orderBy(sql`TO_CHAR(${transaction.date}::timestamp, 'YYYY-MM-DD')`);
+
+      const current = currentTotals[0]!;
+      const previous = prevTotals[0]!;
+
+      const income = parseFloat(current.income);
+      const expense = parseFloat(current.expense);
+      const prevIncome = parseFloat(previous.income);
+      const prevExpense = parseFloat(previous.expense);
+
+      // Calculate percentage changes
+      const calculateChange = (curr: number, prev: number) => {
+        if (prev === 0) return curr > 0 ? 100 : 0;
+        return ((curr - prev) / prev) * 100;
+      };
+
+      const incomeChange = calculateChange(income, prevIncome);
+      const expenseChange = calculateChange(expense, prevExpense);
+
+      // Fill in all days of the month for the chart
+      const cashflowMap = new Map(dailyCashflow.map(d => [d.day, { income: parseFloat(d.income), expense: parseFloat(d.expense) }]));
+      const cashflow: { date: string, income: number, expense: number }[] = [];
+
+      const daysInMonth = endOfMonth.getUTCDate();
+      for (let i = 1; i <= daysInMonth; i++) {
+        const dateObj = new Date(Date.UTC(input.year, input.month - 1, i));
+        const key = dateObj.toISOString().split('T')[0]!;
+        const data = cashflowMap.get(key) ?? { income: 0, expense: 0 };
+        cashflow.push({
+          date: key,
+          ...data
+        });
+      }
+
+      return {
+        summary: {
+          income,
+          expense,
+          incomeChange,
+          expenseChange,
+        },
+        cashflow,
+      };
+    }),
 };
