@@ -126,6 +126,57 @@ export const walletRouter = {
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth() + 1;
 
+      // Group transfers and fees into a single entry for the UI
+      const groupedTransactions: typeof recentTransactions = [];
+      const transferMap = new Map<string, (typeof recentTransactions)[0]>();
+
+      for (const tx of recentTransactions) {
+        if (tx.transferId) {
+          const existing = transferMap.get(tx.transferId);
+          if (existing) {
+            // Update existing transfer entry
+            if (tx.isTransferFee) {
+              // @ts-expect-error - adding virtual property for UI
+              existing.feeAmount = Math.abs(Number(tx.amount));
+            } else {
+              // Ensure the main entry has the positive amount and correct wallets
+              const amount = Math.abs(Number(tx.amount));
+              existing.amount = amount.toString();
+
+              const isDebit = Number(tx.amount) < 0;
+              if (isDebit) {
+                existing.wallet = tx.wallet;
+                existing.toWallet = tx.toWallet;
+              } else {
+                // @ts-expect-error - swapping wallet for display normalization
+                existing.wallet = tx.toWallet;
+                existing.toWallet = tx.wallet;
+              }
+            }
+            continue;
+          } else {
+            // New transfer group
+            const groupedTx = { ...tx };
+
+            if (tx.isTransferFee) {
+              groupedTx.type = "transfer";
+              // @ts-expect-error - adding virtual property for UI
+              groupedTx.feeAmount = Math.abs(Number(tx.amount));
+              groupedTx.amount = "0";
+            } else {
+              // @ts-expect-error - adding virtual property for UI
+              groupedTx.feeAmount = 0;
+              groupedTx.amount = Math.abs(Number(tx.amount)).toString();
+            }
+
+            transferMap.set(tx.transferId, groupedTx);
+            groupedTransactions.push(groupedTx);
+          }
+        } else {
+          groupedTransactions.push(tx);
+        }
+      }
+
       const monthlyResult = await db
         .select({
           monthIncome: sql<string>`COALESCE(SUM(CASE WHEN ${transactionSchema.type} = 'income' THEN ${transactionSchema.amount} ELSE 0 END), 0)`,
@@ -145,7 +196,7 @@ export const walletRouter = {
 
       return {
         ...walletData,
-        transactions: recentTransactions,
+        transactions: groupedTransactions,
         monthlyIncome: parseFloat(monthly?.monthIncome ?? "0"),
         monthlyExpense: parseFloat(monthly?.monthExpense ?? "0"),
       };
