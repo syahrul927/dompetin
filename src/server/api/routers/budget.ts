@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, sql, gte, lte } from "drizzle-orm";
 import { db } from "@/server/db";
 
 import {
@@ -40,8 +40,10 @@ export const budgetRouter = {
       }
 
       const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth() + 1;
+      const currentYear = now.getUTCFullYear();
+      const currentMonth = now.getUTCMonth() + 1;
+      const startOfMonth = new Date(Date.UTC(currentYear, currentMonth - 1, 1));
+      const endOfMonth = new Date(Date.UTC(currentYear, currentMonth, 0));
 
       // Use a subquery to get total spent per category in the current month
       const spentSubquery = db
@@ -55,8 +57,8 @@ export const budgetRouter = {
             eq(transaction.workspaceId, input.workspaceId),
             eq(transaction.type, "expense"),
             isNull(transaction.deletedAt),
-            sql`EXTRACT(YEAR FROM ${transaction.date}::timestamp) = ${currentYear}`,
-            sql`EXTRACT(MONTH FROM ${transaction.date}::timestamp) = ${currentMonth}`
+            gte(transaction.date, startOfMonth),
+            lte(transaction.date, endOfMonth)
           )
         )
         .groupBy(transaction.budgetId)
@@ -108,9 +110,11 @@ export const budgetRouter = {
       }
 
       // Calculate spent amount for this budget
-      const currentMonth = new Date();
-      const currentYear = currentMonth.getFullYear();
-      const currentMonthIdx = currentMonth.getMonth();
+      const now = new Date();
+      const currentYear = now.getUTCFullYear();
+      const currentMonth = now.getUTCMonth() + 1;
+      const startOfMonth = new Date(Date.UTC(currentYear, currentMonth - 1, 1));
+      const endOfMonth = new Date(Date.UTC(currentYear, currentMonth, 0));
 
       const spentResult = await db
         .select({
@@ -122,8 +126,8 @@ export const budgetRouter = {
             eq(transaction.budgetId, budgetData.id),
             eq(transaction.type, "expense"),
             isNull(transaction.deletedAt), // Exclude soft-deleted
-            sql`EXTRACT(YEAR FROM ${transaction.date}::timestamp) = ${currentYear}`,
-            sql`EXTRACT(MONTH FROM ${transaction.date}::timestamp) = ${currentMonthIdx + 1}`,
+            gte(transaction.date, startOfMonth),
+            lte(transaction.date, endOfMonth),
           ),
         );
 

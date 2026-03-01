@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { and, eq, desc, sql, isNull, inArray } from "drizzle-orm";
+import { and, eq, desc, sql, isNull, inArray, gte, lte } from "drizzle-orm";
 import { db } from "@/server/db";
 
 import {
@@ -123,8 +123,10 @@ export const walletRouter = {
 
       // Calculate monthly income/expense
       const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth() + 1;
+      const currentYear = now.getUTCFullYear();
+      const currentMonth = now.getUTCMonth() + 1;
+      const startOfMonth = new Date(Date.UTC(currentYear, currentMonth - 1, 1));
+      const endOfMonth = new Date(Date.UTC(currentYear, currentMonth, 0));
 
       // NEW: Batch fetch all transfer pieces to avoid N+1 and handle legs in other wallets
       const transferIds = [
@@ -243,8 +245,8 @@ export const walletRouter = {
           and(
             eq(transactionSchema.walletId, input.id),
             isNull(transactionSchema.deletedAt),
-            sql`EXTRACT(YEAR FROM ${transactionSchema.date}::timestamp) = ${currentYear}`,
-            sql`EXTRACT(MONTH FROM ${transactionSchema.date}::timestamp) = ${currentMonth}`,
+            gte(transactionSchema.date, startOfMonth),
+            lte(transactionSchema.date, endOfMonth),
           ),
         );
 

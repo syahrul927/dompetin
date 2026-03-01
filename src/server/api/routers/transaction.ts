@@ -862,6 +862,8 @@ export const transactionRouter = {
 
       const now = new Date();
       const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+      const endOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0));
 
       // Monthly totals
       const monthlyResult = await db
@@ -874,7 +876,8 @@ export const transactionRouter = {
           and(
             eq(transaction.workspaceId, input.workspaceId),
             isNull(transaction.deletedAt),
-            eq(transaction.date, today)
+            gte(transaction.date, startOfMonth),
+            lte(transaction.date, endOfMonth)
           ),
         );
 
@@ -950,6 +953,9 @@ export const transactionRouter = {
       const currentYear = input.year ?? now.getUTCFullYear();
       const currentMonth = input.month ?? now.getUTCMonth() + 1;
 
+      const startOfMonth = new Date(Date.UTC(currentYear, currentMonth - 1, 1));
+      const endOfMonth = new Date(Date.UTC(currentYear, currentMonth, 0));
+
       const result = await db
         .select({
           categoryId: transaction.categoryId,
@@ -965,8 +971,8 @@ export const transactionRouter = {
             eq(transaction.workspaceId, input.workspaceId),
             eq(transaction.type, "expense"),
             isNull(transaction.deletedAt),
-            sql`EXTRACT(YEAR FROM ${transaction.date}::timestamp) = ${currentYear}`,
-            sql`EXTRACT(MONTH FROM ${transaction.date}::timestamp) = ${currentMonth}`,
+            gte(transaction.date, startOfMonth),
+            lte(transaction.date, endOfMonth),
           ),
         )
         .groupBy(
