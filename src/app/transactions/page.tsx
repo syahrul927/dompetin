@@ -9,12 +9,36 @@ import { Button } from "@/components/ui/button";
 import { useActiveWorkspace } from "@/components/providers/workspace-provider";
 import { authClient } from "@/server/better-auth/client";
 import { api } from "@/trpc/react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Calendar } from "lucide-react";
 import { TransactionActionSheet } from "@/components/transaction/TransactionActionSheet";
 import { AddTransactionSheet } from "@/components/transaction/AddTransactionSheet";
 import { getWalletContext } from "@/lib/transaction-helpers";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { TransactionAnalytics } from "@/components/transaction/TransactionAnalytics";
+import { ExpenseCategoryChart } from "@/components/dashboard/ExpenseCategoryChart";
 
 const PAGE_SIZE = 20;
+
+const MONTHS = [
+  { value: "1", label: "Januari" },
+  { value: "2", label: "Februari" },
+  { value: "3", label: "Maret" },
+  { value: "4", label: "April" },
+  { value: "5", label: "Mei" },
+  { value: "6", label: "Juni" },
+  { value: "7", label: "Juli" },
+  { value: "8", label: "Agustus" },
+  { value: "9", label: "September" },
+  { value: "10", label: "Oktober" },
+  { value: "11", label: "November" },
+  { value: "12", label: "Desember" },
+];
 
 function formatTransactionDate(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;
@@ -45,6 +69,10 @@ function formatGroupDate(date: Date | string): string {
 export default function TransactionsPage() {
   const { workspaceId } = useActiveWorkspace();
   const { data: session } = authClient.useSession();
+
+  const now = new Date();
+  const [month, setMonth] = useState(now.getUTCMonth() + 1);
+  const [year, setYear] = useState(now.getUTCFullYear());
   const [limit, setLimit] = useState(PAGE_SIZE);
 
   // Sheets state
@@ -53,8 +81,18 @@ export default function TransactionsPage() {
   );
   const [editTx, setEditTx] = useState<Record<string, unknown> | null>(null);
 
-  const { data, isLoading } = api.transaction.getTransactions.useQuery(
-    { workspaceId, limit, offset: 0 },
+  const { data, isLoading: isLoadingTransactions } = api.transaction.getTransactions.useQuery(
+    { workspaceId, month, year, limit, offset: 0 },
+    { enabled: !!workspaceId },
+  );
+
+  const { data: analytics, isLoading: isLoadingAnalytics } = api.transaction.getTransactionAnalytics.useQuery(
+    { workspaceId, month, year },
+    { enabled: !!workspaceId },
+  );
+
+  const { data: categoryData, isLoading: isLoadingCategories } = api.transaction.getExpenseByCategory.useQuery(
+    { workspaceId, month, year },
     { enabled: !!workspaceId },
   );
 
@@ -104,13 +142,69 @@ export default function TransactionsPage() {
     (a, b) => new Date(b).getTime() - new Date(a).getTime(),
   );
 
+  const years = Array.from({ length: 6 }, (_, i) => now.getUTCFullYear() - 4 + i);
+
   return (
     <>
       <PageHeader title="Transaksi" />
-      <div className="px-5 pt-2">
+      <div className="px-5 pt-2 pb-24">
+        {/* Filters */}
+        <div className="flex items-center gap-2 mb-6">
+          <Select
+            value={month.toString()}
+            onValueChange={(val) => setMonth(parseInt(val))}
+          >
+            <SelectTrigger className="h-9 rounded-full bg-secondary/50 border-none px-4 text-xs font-medium w-fit">
+              <Calendar size={14} className="mr-2 text-muted-foreground" />
+              <SelectValue placeholder="Bulan" />
+            </SelectTrigger>
+            <SelectContent className="rounded-[20px]">
+              {MONTHS.map((m) => (
+                <SelectItem key={m.value} value={m.value} className="text-xs">
+                  {m.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={year.toString()}
+            onValueChange={(val) => setYear(parseInt(val))}
+          >
+            <SelectTrigger className="h-9 rounded-full bg-secondary/50 border-none px-4 text-xs font-medium w-fit">
+              <SelectValue placeholder="Tahun" />
+            </SelectTrigger>
+            <SelectContent className="rounded-[20px]">
+              {years.map((y) => (
+                <SelectItem key={y} value={y.toString()} className="text-xs">
+                  {y}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Analytics Section */}
+        <div className="mb-8">
+          <TransactionAnalytics data={analytics} isLoading={isLoadingAnalytics} />
+        </div>
+
+        {/* Category Breakdown */}
+        <div className="mb-8">
+          <ExpenseCategoryChart
+            categories={categoryData?.categories ?? []}
+            grandTotal={categoryData?.grandTotal ?? 0}
+            isLoading={isLoadingCategories}
+          />
+        </div>
+
+        <div className="flex items-baseline justify-between mb-2 px-1">
+          <h3 className="text-base font-bold">Riwayat Transaksi</h3>
+        </div>
+
         {/* Loading state */}
-        {isLoading && (
-          <div className="mt-4 space-y-4">
+        {isLoadingTransactions && transactions.length === 0 && (
+          <div className="space-y-4">
             {[1, 2, 3].map((g) => (
               <div key={g}>
                 <Skeleton className="mb-2 h-4 w-32" />
@@ -132,26 +226,26 @@ export default function TransactionsPage() {
         )}
 
         {/* Empty state */}
-        {!isLoading && transactions.length === 0 && (
-          <Card className="mt-6 rounded-[20px] p-8 text-center">
+        {!isLoadingTransactions && transactions.length === 0 && (
+          <Card className="mt-4 rounded-[20px] p-8 text-center bg-secondary/20 border-dashed">
             <p className="text-muted-foreground text-sm">
-              Belum ada transaksi. Tap tombol + untuk menambahkan transaksi
-              pertama Anda!
+              Tidak ada transaksi untuk periode ini.
             </p>
           </Card>
         )}
 
         {/* Transaction list grouped by date */}
-        {!isLoading && dateKeys.length > 0 && (
-          <div className="mt-4 space-y-5">
+        {!isLoadingTransactions && dateKeys.length > 0 && (
+          <div className="space-y-5">
             {dateKeys.map((dateKey) => {
               const txs = grouped[dateKey]!;
               return (
                 <div key={dateKey}>
-                  <h3 className="text-muted-foreground mb-2 text-[13px] font-semibold">
+                  <h3 className="text-muted-foreground mb-2 text-[12px] font-semibold flex items-center gap-2">
+                    <span className="h-1 w-1 rounded-full bg-muted-foreground/30" />
                     {formatGroupDate(dateKey)}
                   </h3>
-                  <Card className="divide-border divide-y rounded-[20px] px-2">
+                  <Card className="divide-border divide-y rounded-[20px] px-2 shadow-sm">
                     {txs.map((tx) => (
                       <TransactionRow
                         key={tx.id}
@@ -166,15 +260,15 @@ export default function TransactionsPage() {
 
             {/* Load More */}
             {hasMore && (
-              <div className="flex justify-center pt-2 pb-10">
+              <div className="flex justify-center pt-2">
                 <Button
                   variant="ghost"
                   onClick={() => setLimit((prev) => prev + PAGE_SIZE)}
-                  className="text-primary text-sm font-medium"
+                  className="text-primary text-sm font-medium h-10 rounded-full hover:bg-primary/5"
                 >
                   <Loader2
                     size={16}
-                    className={`mr-2 ${isLoading ? "animate-spin" : "hidden"}`}
+                    className={`mr-2 ${isLoadingTransactions ? "animate-spin" : "hidden"}`}
                   />
                   Muat Lebih Banyak
                 </Button>
