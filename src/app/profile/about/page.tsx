@@ -4,8 +4,10 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { api } from "@/trpc/react";
 import { Mail, MessageCircle, Instagram } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useRouter } from "next/navigation";
 
 export default function AboutPage() {
+  const router = useRouter();
   const { data: about, isLoading } = api.getAboutInfo.useQuery();
 
   const contacts = [
@@ -38,7 +40,11 @@ export default function AboutPage() {
 
   return (
     <>
-      <PageHeader title="Tentang" variant="back" />
+      <PageHeader
+        title="Tentang"
+        variant="back"
+        onBack={() => router.back()}
+      />
       <div className="px-5 pt-4">
         {/* App Info */}
         <div className="flex flex-col items-center gap-2 py-6">

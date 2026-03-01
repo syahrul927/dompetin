@@ -68,7 +68,7 @@ export default async function ProfilePage() {
             </Link>
 
             <Link
-              href="/goals"
+              href="/profile/goals"
               className="flex items-center gap-4 rounded-2xl bg-card p-4 transition-colors active:bg-muted/50"
             >
               <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
