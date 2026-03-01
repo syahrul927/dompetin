@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { and, eq, desc, sql, isNull } from "drizzle-orm";
+import { and, eq, desc, sql, isNull, inArray } from "drizzle-orm";
 import { db } from "@/server/db";
 
 import {
@@ -126,51 +126,107 @@ export const walletRouter = {
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth() + 1;
 
+      // NEW: Batch fetch all transfer pieces to avoid N+1 and handle legs in other wallets
+      const transferIds = [
+        ...new Set(
+          recentTransactions
+            .map((t) => t.transferId)
+            .filter((id): id is string => id !== null),
+        ),
+      ];
+
+      let allTransferPieces: typeof recentTransactions = [];
+      if (transferIds.length > 0) {
+        allTransferPieces = await db.query.transaction.findMany({
+          where: and(
+            isNull(transactionSchema.deletedAt),
+            inArray(transactionSchema.transferId, transferIds),
+          ),
+          with: {
+            wallet: {
+              columns: {
+                id: true,
+                name: true,
+              },
+            },
+            toWallet: {
+              columns: {
+                id: true,
+                name: true,
+              },
+            },
+            category: {
+              columns: {
+                id: true,
+                name: true,
+                icon: true,
+                color: true,
+              },
+            },
+            createdBy: {
+              columns: {
+                id: true,
+                name: true,
+                image: true,
+              },
+            },
+          },
+        });
+      }
+
       // Group transfers and fees into a single entry for the UI
       const groupedTransactions: typeof recentTransactions = [];
-      const transferMap = new Map<string, (typeof recentTransactions)[0]>();
+      const processedTransferIds = new Set<string>();
+
+      // Map to store combined transfer data
+      const transferDataMap = new Map<string, (typeof recentTransactions)[0]>();
+
+      // Pre-process all transfer pieces
+      for (const piece of allTransferPieces) {
+        if (!piece.transferId) continue;
+
+        let existing = transferDataMap.get(piece.transferId);
+        if (!existing) {
+          // Initialize with a copy of the piece
+          existing = { ...piece };
+          if (existing.isTransferFee) {
+            existing.type = "transfer";
+          }
+          // @ts-expect-error - adding virtual property for UI
+          existing.feeAmount = 0;
+          transferDataMap.set(piece.transferId, existing);
+        }
+
+        if (piece.isTransferFee) {
+          // @ts-expect-error - adding virtual property for UI
+          existing.feeAmount = Math.abs(Number(piece.amount));
+        } else {
+          // Main leg (debit or credit)
+          existing.type = "transfer";
+          const amount = Math.abs(Number(piece.amount));
+          existing.amount = amount.toString();
+
+          const isDebit = Number(piece.amount) < 0;
+          if (isDebit) {
+            existing.wallet = piece.wallet;
+            existing.toWallet = piece.toWallet;
+          } else {
+            // Credit leg: piece.wallet is destination, piece.toWallet is source
+            // @ts-expect-error - swapping wallet for display normalization
+            existing.wallet = piece.toWallet;
+            existing.toWallet = piece.wallet;
+          }
+        }
+      }
 
       for (const tx of recentTransactions) {
         if (tx.transferId) {
-          const existing = transferMap.get(tx.transferId);
-          if (existing) {
-            // Update existing transfer entry
-            if (tx.isTransferFee) {
-              // @ts-expect-error - adding virtual property for UI
-              existing.feeAmount = Math.abs(Number(tx.amount));
-            } else {
-              // Ensure the main entry has the positive amount and correct wallets
-              const amount = Math.abs(Number(tx.amount));
-              existing.amount = amount.toString();
+          if (processedTransferIds.has(tx.transferId)) continue;
 
-              const isDebit = Number(tx.amount) < 0;
-              if (isDebit) {
-                existing.wallet = tx.wallet;
-                existing.toWallet = tx.toWallet;
-              } else {
-                // @ts-expect-error - swapping wallet for display normalization
-                existing.wallet = tx.toWallet;
-                existing.toWallet = tx.wallet;
-              }
-            }
-            continue;
-          } else {
-            // New transfer group
-            const groupedTx = { ...tx };
-
-            if (tx.isTransferFee) {
-              groupedTx.type = "transfer";
-              // @ts-expect-error - adding virtual property for UI
-              groupedTx.feeAmount = Math.abs(Number(tx.amount));
-              groupedTx.amount = "0";
-            } else {
-              // @ts-expect-error - adding virtual property for UI
-              groupedTx.feeAmount = 0;
-              groupedTx.amount = Math.abs(Number(tx.amount)).toString();
-            }
-
-            transferMap.set(tx.transferId, groupedTx);
-            groupedTransactions.push(groupedTx);
+          const grouped = transferDataMap.get(tx.transferId);
+          if (grouped) {
+            groupedTransactions.push(grouped);
+            processedTransferIds.add(tx.transferId);
           }
         } else {
           groupedTransactions.push(tx);
