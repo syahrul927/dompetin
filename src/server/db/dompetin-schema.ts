@@ -233,6 +233,10 @@ export const transaction = pgTable("dompetin_transaction", {
   // Transfer linkage field
   transferId: uuidColumn("transfer_id"),
 
+  isTransferFee: boolean("is_transfer_fee")
+    .default(false)
+    .notNull(),
+
   createdAt: timestamp("created_at", { withTimezone: true })
     .$defaultFn(() => new Date())
     .notNull(),

@@ -1,0 +1,1 @@
+ALTER TABLE "dompetin_transaction" ADD COLUMN "is_transfer_fee" boolean DEFAULT false NOT NULL;
