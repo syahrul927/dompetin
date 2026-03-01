@@ -131,15 +131,29 @@ export function TransactionAnalytics({ data, isLoading }: TransactionAnalyticsPr
                 tickFormatter={(value: number) => (value >= 1000000 ? `${(value / 1000000).toFixed(1)}jt` : value >= 1000 ? `${(value / 1000).toFixed(0)}rb` : String(value))}
               />
               <Tooltip
-                formatter={(value: number) => [formatIDR(value), ""]}
-                labelFormatter={(label, payload) => {
-                    if (payload && payload[0] && payload[0].payload) {
-                        return (payload[0].payload as { date: string }).date;
-                    }
-                    return String(label);
+                content={({ active, payload, label }) => {
+                  if (active && payload && payload.length) {
+                    const actualLabel = payload[0]?.payload?.date || label;
+                    return (
+                      <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-3 space-y-2">
+                        <p className="font-medium text-sm border-b pb-1 mb-2">{actualLabel}</p>
+                        {payload.map((entry, index) => (
+                          <div key={index} className="flex items-center justify-between gap-4 text-xs">
+                            <div className="flex items-center gap-1.5">
+                              <div
+                                className="w-2.5 h-2.5 rounded-[2px]"
+                                style={{ backgroundColor: entry.color }}
+                              />
+                              <span className="text-muted-foreground">{entry.name}</span>
+                            </div>
+                            <span className="font-medium">{formatIDR(entry.value as number)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }
+                  return null;
                 }}
-                contentStyle={{ borderRadius: '12px', border: '1px solid var(--color-border)', backgroundColor: 'var(--color-card)', color: 'var(--color-card-foreground)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                itemStyle={{ color: 'var(--color-foreground)' }}
               />
               <Bar dataKey="income" fill="var(--color-primary)" radius={[4, 4, 0, 0]} name="Masuk" barSize={24} />
               <Bar dataKey="expense" fill="var(--color-destructive)" radius={[4, 4, 0, 0]} name="Keluar" barSize={24} />
