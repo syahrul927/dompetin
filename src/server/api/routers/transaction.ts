@@ -450,46 +450,76 @@ export const transactionRouter = {
       const transferId = crypto.randomUUID();
 
       // Convert amount from cents to database format
-      const amountDb = (input.amount / 100).toFixed(2);
+      const amountNum = input.amount / 100;
+      const amountDb = amountNum.toFixed(2);
       const feeAmountNum = input.feeAmount ? input.feeAmount / 100 : 0;
       const feeAmountDb = feeAmountNum.toFixed(2);
       const dateDb = new Date(input.date);
 
       // Use database transaction for atomicity
       await db.transaction(async (tx) => {
+        // Fetch both wallets fresh inside transaction
+        const currentFromWallet = await tx.query.wallet.findFirst({
+          where: eq(walletSchema.id, input.fromWalletId),
+        });
+        const currentToWallet = await tx.query.wallet.findFirst({
+          where: eq(walletSchema.id, input.toWalletId),
+        });
+
+        if (!currentFromWallet || !currentToWallet)
+          throw new Error("One or both wallets not found during update");
+
         // Debit transaction (from wallet)
-        await tx
-          .insert(transaction)
-          .values({
-            id: transferId,
-            type: "transfer",
-            amount: `-${amountDb}`, // Negative amount (deduction)
-            name: input.name,
-            notes: input.notes ?? null,
-            date: dateDb,
-            walletId: input.fromWalletId,
-            toWalletId: input.toWalletId,
-            transferId,
-            workspaceId,
-            createdBy: ctx.session.user.id,
-          });
+        await tx.insert(transaction).values({
+          id: transferId,
+          type: "transfer",
+          amount: `-${amountDb}`, // Negative amount (deduction)
+          name: input.name,
+          notes: input.notes ?? null,
+          date: dateDb,
+          walletId: input.fromWalletId,
+          toWalletId: input.toWalletId,
+          transferId,
+          workspaceId,
+          createdBy: ctx.session.user.id,
+        });
 
         // Credit transaction (to wallet)
+        await tx.insert(transaction).values({
+          id: crypto.randomUUID(),
+          type: "transfer",
+          amount: amountDb, // Positive amount (addition)
+          name: input.name,
+          notes: input.notes ?? null,
+          date: dateDb,
+          walletId: input.toWalletId,
+          toWalletId: input.fromWalletId,
+          transferId,
+          workspaceId,
+          createdBy: ctx.session.user.id,
+        });
+
+        // Deduct both transfer amount and fee from the source wallet
         await tx
-          .insert(transaction)
-          .values({
-            id: crypto.randomUUID(),
-            type: "transfer",
-            amount: amountDb, // Positive amount (addition)
-            name: input.name,
-            notes: input.notes ?? null,
-            date: dateDb,
-            walletId: input.toWalletId,
-            toWalletId: input.fromWalletId,
-            transferId,
-            workspaceId,
-            createdBy: ctx.session.user.id,
-          });
+          .update(walletSchema)
+          .set({
+            balance: (
+              Number(currentFromWallet.balance) -
+              amountNum -
+              feeAmountNum
+            ).toFixed(2),
+            updatedAt: new Date(),
+          })
+          .where(eq(walletSchema.id, input.fromWalletId));
+
+        // Update destination wallet
+        await tx
+          .update(walletSchema)
+          .set({
+            balance: (Number(currentToWallet.balance) + amountNum).toFixed(2),
+            updatedAt: new Date(),
+          })
+          .where(eq(walletSchema.id, input.toWalletId));
 
         // If fee exists, find/create category and insert fee transaction
         if (feeAmountNum > 0) {
@@ -521,7 +551,7 @@ export const transactionRouter = {
             id: crypto.randomUUID(),
             type: "expense",
             amount: feeAmountDb,
-            name: `Biaya Admin Transfer: ${input.name}`,
+            name: "Biaya Admin Transfer",
             date: dateDb,
             walletId: input.fromWalletId,
             transferId, // Link to the transfer
@@ -531,40 +561,6 @@ export const transactionRouter = {
             createdBy: ctx.session.user.id,
           });
         }
-
-        // Fetch both wallets fresh inside transaction
-        const currentFromWallet = await tx.query.wallet.findFirst({
-          where: eq(walletSchema.id, input.fromWalletId),
-        });
-        const currentToWallet = await tx.query.wallet.findFirst({
-          where: eq(walletSchema.id, input.toWalletId),
-        });
-
-        if (!currentFromWallet || !currentToWallet)
-          throw new Error("Wallet not found during update");
-
-        const amountNum = Number(amountDb);
-
-        // Update wallet balances safely
-        await tx
-          .update(walletSchema)
-          .set({
-            balance: (
-              Number(currentFromWallet.balance) -
-              amountNum -
-              feeAmountNum
-            ).toFixed(2),
-            updatedAt: new Date(),
-          })
-          .where(eq(walletSchema.id, input.fromWalletId));
-
-        await tx
-          .update(walletSchema)
-          .set({
-            balance: (Number(currentToWallet.balance) + amountNum).toFixed(2),
-            updatedAt: new Date(),
-          })
-          .where(eq(walletSchema.id, input.toWalletId));
       });
 
       return { id: transferId };
