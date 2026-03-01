@@ -8,6 +8,7 @@ import {
   BarChart,
   CartesianGrid,
   ResponsiveContainer,
+  XAxis,
   YAxis,
   Tooltip,
 } from "recharts";
@@ -114,9 +115,19 @@ export function TransactionAnalytics({ data, isLoading }: TransactionAnalyticsPr
         <div className="h-48 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
+              <XAxis
+                dataKey="shortDate"
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }}
+                tickMargin={8}
+                minTickGap={10}
+              />
               <YAxis
-                tick={{ fontSize: 10 }}
+                tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }}
+                axisLine={false}
+                tickLine={false}
                 tickFormatter={(value: number) => (value >= 1000000 ? `${(value / 1000000).toFixed(1)}jt` : value >= 1000 ? `${(value / 1000).toFixed(0)}rb` : String(value))}
               />
               <Tooltip
@@ -127,10 +138,11 @@ export function TransactionAnalytics({ data, isLoading }: TransactionAnalyticsPr
                     }
                     return String(label);
                 }}
-                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                contentStyle={{ borderRadius: '12px', border: '1px solid var(--color-border)', backgroundColor: 'var(--color-card)', color: 'var(--color-card-foreground)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                itemStyle={{ color: 'var(--color-foreground)' }}
               />
-              <Bar dataKey="income" fill="#10b981" radius={[2, 2, 0, 0]} name="Masuk" />
-              <Bar dataKey="expense" fill="#f43f5e" radius={[2, 2, 0, 0]} name="Keluar" />
+              <Bar dataKey="income" fill="var(--color-primary)" radius={[4, 4, 0, 0]} name="Masuk" barSize={12} />
+              <Bar dataKey="expense" fill="var(--color-destructive)" radius={[4, 4, 0, 0]} name="Keluar" barSize={12} />
             </BarChart>
           </ResponsiveContainer>
         </div>
