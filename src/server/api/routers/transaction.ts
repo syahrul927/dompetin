@@ -573,8 +573,13 @@ export const transactionRouter = {
       }
 
       const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth() + 1;
+
+      // We want TODAY's data for the summary, not the whole month
+      const startOfDay = new Date(now);
+      startOfDay.setHours(0, 0, 0, 0);
+
+      const endOfDay = new Date(now);
+      endOfDay.setHours(23, 59, 59, 999);
 
       // Monthly totals
       const monthlyResult = await db
@@ -587,8 +592,8 @@ export const transactionRouter = {
           and(
             eq(transaction.workspaceId, input.workspaceId),
             isNull(transaction.deletedAt),
-            sql`EXTRACT(YEAR FROM ${transaction.date}::timestamp) = ${currentYear}`,
-            sql`EXTRACT(MONTH FROM ${transaction.date}::timestamp) = ${currentMonth}`,
+            gte(transaction.date, startOfDay),
+            lte(transaction.date, endOfDay)
           ),
         );
 

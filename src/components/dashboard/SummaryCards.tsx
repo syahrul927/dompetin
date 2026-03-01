@@ -43,7 +43,7 @@ export function SummaryCards({
           <ArrowUp size={15} className="stroke-[2.5] text-primary" />
         </div>
         <div>
-          <p className="text-xs text-muted-foreground">Pemasukan</p>
+          <p className="text-xs text-muted-foreground">Pemasukan Hari Ini</p>
           <p className="text-[15px] font-bold text-primary">
             {formatIDR(monthlyIncome)}
           </p>
@@ -56,7 +56,7 @@ export function SummaryCards({
           <ArrowDown size={15} className="stroke-[2.5] text-muted-foreground" />
         </div>
         <div>
-          <p className="text-xs text-muted-foreground">Pengeluaran</p>
+          <p className="text-xs text-muted-foreground">Pengeluaran Hari Ini</p>
           <p className="text-[15px] font-bold text-foreground">
             {formatIDR(monthlyExpense)}
           </p>

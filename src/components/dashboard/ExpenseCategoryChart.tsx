@@ -101,19 +101,15 @@ export function ExpenseCategoryChart({
         </div>
 
         {/* Category list */}
-        <div className="flex-1 space-y-2">
+        <div className="flex-1 space-y-2 min-w-0">
           {chartData.map((cat) => {
             const pct = grandTotal > 0 ? ((cat.total / grandTotal) * 100).toFixed(0) : "0";
             const Icon = getCategoryIcon(cat.icon);
             return (
               <div key={cat.id ?? cat.name} className="flex items-center gap-2">
-                <span
-                  className="h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: cat.color }}
-                />
-                <Icon className="h-3.5 w-3.5 shrink-0" style={{ color: cat.color }} />
-                <span className="truncate text-xs">{cat.name}</span>
-                <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                <Icon className="h-4 w-4 shrink-0" style={{ color: cat.color }} />
+                <span className="truncate text-xs min-w-0 flex-1">{cat.name}</span>
+                <span className="shrink-0 text-xs text-muted-foreground">
                   {pct}%
                 </span>
               </div>
