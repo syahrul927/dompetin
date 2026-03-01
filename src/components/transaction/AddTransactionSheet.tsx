@@ -160,6 +160,9 @@ export function AddTransactionSheet({
         if (txType !== "transfer") {
           setWalletId((initialData.wallet as { id: string })?.id || "");
           setCategoryId((initialData.category as { id: string })?.id || "");
+        } else {
+          setFromWalletId((initialData.wallet as { id: string })?.id || "");
+          setToWalletId((initialData.toWallet as { id: string })?.id || "");
         }
         if (txType === "expense") {
           setBudgetId((initialData.budget as { id: string })?.id || "");
@@ -257,24 +260,29 @@ export function AddTransactionSheet({
           resolvedCategoryId = result.id;
         }
 
+        const updateDataPayload = {
+          id: initialData.id as string,
+          name: name.trim(),
+          notes: note.trim() || undefined,
+          date: dateISO,
+          amount: amountInCents,
+        };
+
         if (type !== "transfer") {
-           await updateTransaction.mutateAsync({
-             id: initialData.id as string,
-             name: name.trim(),
-             notes: note.trim() || undefined,
-             date: dateISO,
-             amount: amountInCents,
-             categoryId: resolvedCategoryId,
-             budgetId: budgetId || undefined,
-           });
+          await updateTransaction.mutateAsync({
+            ...updateDataPayload,
+            walletId,
+            categoryId: resolvedCategoryId,
+            budgetId: budgetId || undefined,
+          });
         } else {
-           // For transfers, only allow updating name/notes/date to avoid complex balance logic
-           await updateTransaction.mutateAsync({
-             id: initialData.id as string,
-             name: name.trim(),
-             notes: note.trim() || undefined,
-             date: dateISO,
-           });
+          const feeAmountInCents = hasFee ? (parseInt(feeAmountStr, 10) || 0) * 100 : undefined;
+          await updateTransaction.mutateAsync({
+            ...updateDataPayload,
+            walletId: fromWalletId,
+            toWalletId: toWalletId,
+            feeAmount: feeAmountInCents,
+          });
         }
       } else {
         // Create mode
@@ -558,7 +566,7 @@ export function AddTransactionSheet({
                 </div>
 
                 {/* Transfer Fee Toggle */}
-                {type === "transfer" && !initialData && (
+                {type === "transfer" && (
                   <div className="space-y-3 pt-1">
                     <div className="flex items-center justify-between px-1">
                       <Label htmlFor="has-fee" className="text-sm font-medium">Biaya Transfer</Label>
