@@ -276,7 +276,7 @@ export function AddTransactionSheet({
             budgetId: budgetId || undefined,
           });
         } else {
-          const feeAmountInCents = hasFee ? (parseInt(feeAmountStr, 10) || 0) * 100 : undefined;
+          const feeAmountInCents = hasFee ? (parseInt(feeAmountStr, 10) || 0) * 100 : 0;
           await updateTransaction.mutateAsync({
             ...updateDataPayload,
             walletId: fromWalletId,
