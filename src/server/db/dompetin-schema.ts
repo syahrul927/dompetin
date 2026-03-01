@@ -234,7 +234,7 @@ export const transaction = pgTable("dompetin_transaction", {
   transferId: uuidColumn("transfer_id"),
 
   isTransferFee: boolean("is_transfer_fee")
-    .default(false)
+    .$defaultFn(() => false)
     .notNull(),
 
   createdAt: timestamp("created_at", { withTimezone: true })

@@ -1,0 +1,1 @@
+ALTER TABLE "dompetin_transaction" ALTER COLUMN "is_transfer_fee" DROP DEFAULT;
