@@ -943,75 +943,70 @@ export const transactionRouter = {
       }
 
       // 3. Database transaction to delete and revert balances
-      await db.transaction(async (tx) => {
-        if (existingTx.transferId) {
-          // Handle linked transfer group (Debit, Credit, and optional Fee)
-          const relatedTransactions = await tx.query.transaction.findMany({
-            where: eq(transaction.transferId, existingTx.transferId),
-          });
+      if (existingTx.transferId) {
+        const linkedTxs = await db.query.transaction.findMany({
+          where: eq(transaction.transferId, existingTx.transferId),
+        });
 
-          for (const relTx of relatedTransactions) {
-            const amountAbs = Math.abs(Number(relTx.amount));
+        await db.transaction(async (tx) => {
+          for (const linked of linkedTxs) {
+            // Soft delete
+            await tx
+              .update(transaction)
+              .set({ deletedAt: new Date(), deletedBy: ctx.session.user.id })
+              .where(eq(transaction.id, linked.id));
 
-            if (relTx.type === "transfer") {
-              const isDebit = Number(relTx.amount) < 0;
-              const currentWallet = await tx.query.wallet.findFirst({
-                where: eq(walletSchema.id, relTx.walletId),
-              });
+            // Refund wallet balances
+            const wallet = await tx.query.wallet.findFirst({
+              where: eq(walletSchema.id, linked.walletId),
+            });
+            if (wallet) {
+              const refundAmount =
+                linked.type === "transfer" && !linked.amount.startsWith("-")
+                  ? -Number(linked.amount) // Undo credit
+                  : Math.abs(Number(linked.amount)); // Undo debit or expense fee
 
-              if (currentWallet) {
-                await tx
-                  .update(walletSchema)
-                  .set({
-                    balance: (isDebit
-                      ? Number(currentWallet.balance) + amountAbs
-                      : Number(currentWallet.balance) - amountAbs
-                    ).toFixed(2),
-                    updatedAt: new Date(),
-                  })
-                  .where(eq(walletSchema.id, relTx.walletId));
-              }
-            } else if (relTx.type === "expense" && relTx.isTransferFee) {
-              // Revert fee: add back to wallet
-              const currentWallet = await tx.query.wallet.findFirst({
-                where: eq(walletSchema.id, relTx.walletId),
-              });
-
-              if (currentWallet) {
-                await tx
-                  .update(walletSchema)
-                  .set({
-                    balance: (Number(currentWallet.balance) + amountAbs).toFixed(2),
-                    updatedAt: new Date(),
-                  })
-                  .where(eq(walletSchema.id, relTx.walletId));
-              }
+              await tx
+                .update(walletSchema)
+                .set({
+                  balance: (Number(wallet.balance) + refundAmount).toFixed(2),
+                  updatedAt: new Date(),
+                })
+                .where(eq(walletSchema.id, wallet.id));
             }
           }
+        });
 
-          // Delete all transactions in the group
-          await tx.delete(transaction).where(eq(transaction.transferId, existingTx.transferId));
-        } else {
-          // Handle regular transaction (existing logic)
-          await tx.delete(transaction).where(eq(transaction.id, input.id));
+        return { success: true };
+      }
 
-          const amountAbs = Math.abs(Number(existingTx.amount));
-          const currentWallet = await tx.query.wallet.findFirst({
-            where: eq(walletSchema.id, existingTx.walletId),
-          });
+      // Handle regular transaction (soft delete)
+      await db.transaction(async (tx) => {
+        await tx
+          .update(transaction)
+          .set({
+            deletedAt: new Date(),
+            deletedBy: ctx.session.user.id,
+          })
+          .where(eq(transaction.id, input.id));
 
-          if (currentWallet) {
-            await tx
-              .update(walletSchema)
-              .set({
-                balance: (existingTx.type === "income"
+        const amountAbs = Math.abs(Number(existingTx.amount));
+        const currentWallet = await tx.query.wallet.findFirst({
+          where: eq(walletSchema.id, existingTx.walletId),
+        });
+
+        if (currentWallet) {
+          await tx
+            .update(walletSchema)
+            .set({
+              balance: (
+                existingTx.type === "income"
                   ? Number(currentWallet.balance) - amountAbs
                   : Number(currentWallet.balance) + amountAbs
-                ).toFixed(2),
-                updatedAt: new Date(),
-              })
-              .where(eq(walletSchema.id, existingTx.walletId));
-          }
+              ).toFixed(2),
+              updatedAt: new Date(),
+            })
+            .where(eq(walletSchema.id, existingTx.walletId));
         }
       });
 
