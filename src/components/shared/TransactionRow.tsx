@@ -62,14 +62,18 @@ export function TransactionRow({ transaction, onClick }: TransactionRowProps) {
     <Item size="sm" asChild>
       <button
         onClick={onClick}
-        className="w-full text-left transition-colors hover:bg-accent/50"
+        className="hover:bg-accent/50 w-full text-left transition-colors"
       >
         <ItemMedia
           variant="icon"
           className="rounded-[10px]"
           style={
             iconBgColor && iconColor
-              ? { backgroundColor: iconBgColor, color: iconColor, borderColor: "transparent" }
+              ? {
+                backgroundColor: iconBgColor,
+                color: iconColor,
+                borderColor: "transparent",
+              }
               : undefined
           }
         >
@@ -88,13 +92,15 @@ export function TransactionRow({ transaction, onClick }: TransactionRowProps) {
               type={transaction.type}
               size="sm"
             />
-            {transaction.feeAmount && transaction.feeAmount > 0 && (
-              <span className="mt-0.5 text-[10px] text-muted-foreground">
+            {transaction.feeAmount && transaction.feeAmount > 0 ? (
+              <span className="text-muted-foreground mt-0.5 text-[10px]">
                 (+ Biaya {formatIDR(transaction.feeAmount)})
               </span>
+            ) : (
+              <></>
             )}
             {shortAuthor && (
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-muted-foreground text-[10px]">
                 {shortAuthor}
               </span>
             )}
