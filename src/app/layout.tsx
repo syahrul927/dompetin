@@ -3,6 +3,8 @@ import "@/styles/globals.css";
 import { TRPCReactProvider } from "@/trpc/react";
 import { type Metadata } from "next";
 import { DM_Sans } from "next/font/google";
+import Script from "next/script";
+import { env } from "@/env";
 
 // PWA Components
 import { OfflineIndicator } from "@/components/pwa/offline-indicator";
@@ -116,6 +118,14 @@ export default function RootLayout({
                 {children}
                 <InstallPrompt />
                 <OfflineIndicator />
+                {env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && env.NEXT_PUBLIC_UMAMI_URL && (
+                  <Script
+                    defer
+                    src={`${env.NEXT_PUBLIC_UMAMI_URL}/script.js`}
+                    data-website-id={env.NEXT_PUBLIC_UMAMI_WEBSITE_ID}
+                    strategy="afterInteractive"
+                  />
+                )}
               </AppShell>
             </WorkspaceProvider>
           </TRPCReactProvider>
