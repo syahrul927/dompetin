@@ -30,7 +30,8 @@ export const env = createEnv({
    * `NEXT_PUBLIC_`.
    */
   client: {
-    // NEXT_PUBLIC_CLIENTVAR: z.string(),
+    NEXT_PUBLIC_UMAMI_WEBSITE_ID: z.string().uuid().optional(),
+    NEXT_PUBLIC_UMAMI_URL: z.string().url().optional(),
   },
 
   /**
@@ -49,6 +50,8 @@ export const env = createEnv({
     ABOUT_WHATSAPP: process.env.ABOUT_WHATSAPP,
     ABOUT_INSTAGRAM: process.env.ABOUT_INSTAGRAM,
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+    NEXT_PUBLIC_UMAMI_WEBSITE_ID: process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID,
+    NEXT_PUBLIC_UMAMI_URL: process.env.NEXT_PUBLIC_UMAMI_URL,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
