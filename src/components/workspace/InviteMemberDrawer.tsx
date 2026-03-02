@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { api } from "@/trpc/react";
 import { useActiveWorkspace } from "@/components/providers/workspace-provider";
+import { useAnalytics } from "@/hooks/use-analytics";
 
 interface InviteMemberDrawerProps {
   open: boolean;
@@ -30,11 +31,13 @@ export function InviteMemberDrawer({
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const { workspaceId } = useActiveWorkspace();
+  const { trackEvent } = useAnalytics();
 
   const inviteMember = api.workspace.inviteMember.useMutation({
     onSuccess: () => {
       setEmail("");
       setError("");
+      trackEvent("member_invited");
       onOpenChange(false);
     },
     onError: (err) => {
