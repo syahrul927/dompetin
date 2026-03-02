@@ -23,6 +23,7 @@ import {
 import { WalletIconPicker } from "./WalletIconPicker";
 import { DEFAULT_ICON_FOR_TYPE } from "@/lib/wallet-icons";
 import { api } from "@/trpc/react";
+import { useAnalytics } from "@/hooks/use-analytics";
 
 const WALLET_TYPES = [
   { value: "cash", label: "Tunai" },
@@ -53,6 +54,7 @@ export function CreateWalletDrawer({
   workspaceId,
 }: CreateWalletDrawerProps) {
   const utils = api.useUtils();
+  const { trackEvent } = useAnalytics();
 
   const form = useForm<CreateWalletForm>({
     resolver: zodResolver(createWalletSchema),
@@ -67,6 +69,7 @@ export function CreateWalletDrawer({
   const createMutation = api.wallet.createWallet.useMutation({
     onSuccess: () => {
       void utils.wallet.getWallets.invalidate();
+      trackEvent("wallet_created", { type: form.getValues().type });
       form.reset();
       onOpenChange(false);
     },

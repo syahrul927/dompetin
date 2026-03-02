@@ -19,6 +19,7 @@ import { BudgetSelectDrawer } from "./BudgetSelectDrawer";
 import { CategorySelectDrawer } from "./CategorySelectDrawer";
 import { useActiveWorkspace } from "@/components/providers/workspace-provider";
 import { api } from "@/trpc/react";
+import { useAnalytics } from "@/hooks/use-analytics";
 import { isDefaultCategoryId } from "@/lib/default-categories";
 import { compressImage } from "@/lib/image";
 import { ArrowDown, ArrowLeft, Loader2, CalendarIcon, Camera } from "lucide-react";
@@ -46,6 +47,7 @@ export function AddTransactionSheet({
   initialData,
 }: AddTransactionSheetProps) {
   const { workspaceId } = useActiveWorkspace();
+  const { trackEvent } = useAnalytics();
 
   // Step state: "amount" or "details"
   const [step, setStep] = useState<"amount" | "details">("amount");
@@ -95,6 +97,7 @@ export function AddTransactionSheet({
 
     try {
       setIsScanning(true);
+      trackEvent("scan_struk_initiated");
       const compressedBase64 = await compressImage(file);
       const result = await scanMutation.mutateAsync({
         imageBase64: compressedBase64,
@@ -107,6 +110,8 @@ export function AddTransactionSheet({
         if (result.date) setDate(result.date);
         if (result.type) setType(result.type);
         if (result.notes) setNote(result.notes);
+
+        trackEvent("scan_struk_success");
 
         // Move to details step to review
         setStep("details");
@@ -326,6 +331,10 @@ export function AddTransactionSheet({
         utils.wallet.getWallets.invalidate(),
         utils.wallet.getWallet.invalidate(),
       ]);
+
+      trackEvent(initialData ? "transaction_updated" : "transaction_added", {
+        type,
+      });
 
       resetForm();
       onOpenChange(false);

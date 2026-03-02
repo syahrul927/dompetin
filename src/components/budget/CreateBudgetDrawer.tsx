@@ -9,6 +9,7 @@ import { AmountInput } from "@/components/transaction/AmountInput";
 import { Numpad } from "@/components/shared/Numpad";
 import { api } from "@/trpc/react";
 import { Loader2 } from "lucide-react";
+import { useAnalytics } from "@/hooks/use-analytics";
 
 interface Props {
   open: boolean;
@@ -20,6 +21,7 @@ export function CreateBudgetDrawer({ open, onOpenChange, workspaceId }: Props) {
   const [step, setStep] = useState<"amount" | "details">("amount");
   const [amountStr, setAmountStr] = useState("0");
   const [name, setName] = useState("");
+  const { trackEvent } = useAnalytics();
 
   const utils = api.useUtils();
   const createBudget = api.budget.createBudget.useMutation();
@@ -46,6 +48,7 @@ export function CreateBudgetDrawer({ open, onOpenChange, workspaceId }: Props) {
       });
 
       await utils.budget.getBudgets.invalidate();
+      trackEvent("budget_created");
       resetForm();
       onOpenChange(false);
     } catch (e) {
