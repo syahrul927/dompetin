@@ -9,6 +9,7 @@ import { AmountInput } from "@/components/transaction/AmountInput";
 import { Numpad } from "@/components/shared/Numpad";
 import { api } from "@/trpc/react";
 import { Loader2, Trash2 } from "lucide-react";
+import { useAnalytics } from "@/hooks/use-analytics";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,6 +41,7 @@ export function EditBudgetDrawer({ open, onOpenChange, budget }: Props) {
   const [amountStr, setAmountStr] = useState(budget.amount.toString());
   const [name, setName] = useState(budget.name);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const { trackEvent } = useAnalytics();
 
   const utils = api.useUtils();
   const updateBudget = api.budget.updateBudget.useMutation();
@@ -69,6 +71,7 @@ export function EditBudgetDrawer({ open, onOpenChange, budget }: Props) {
       });
 
       await utils.budget.getBudgets.invalidate();
+      trackEvent("budget_updated");
       onOpenChange(false);
     } catch (e) {
       console.error(e);
@@ -79,6 +82,7 @@ export function EditBudgetDrawer({ open, onOpenChange, budget }: Props) {
     try {
       await deleteBudget.mutateAsync({ id: budget.id });
       await utils.budget.getBudgets.invalidate();
+      trackEvent("budget_deleted");
       setShowDeleteConfirm(false);
       onOpenChange(false);
     } catch (e) {

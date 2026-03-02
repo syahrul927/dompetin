@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { WalletIconPicker } from "./WalletIconPicker";
 import { api } from "@/trpc/react";
+import { useAnalytics } from "@/hooks/use-analytics";
 
 const editWalletSchema = z.object({
   name: z.string().min(1, "Nama wajib diisi").max(255),
@@ -40,6 +41,7 @@ export function EditWalletDrawer({
   wallet,
 }: EditWalletDrawerProps) {
   const utils = api.useUtils();
+  const { trackEvent } = useAnalytics();
 
   const form = useForm<EditWalletForm>({
     resolver: zodResolver(editWalletSchema),
@@ -63,6 +65,7 @@ export function EditWalletDrawer({
     onSuccess: () => {
       void utils.wallet.getWallets.invalidate();
       void utils.wallet.getWallet.invalidate();
+      trackEvent("wallet_updated", { type: wallet?.type ?? "" });
       onOpenChange(false);
     },
   });

@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAnalytics } from "@/hooks/use-analytics";
 
 const CATEGORY_COLORS = [
   "#ef4444", "#f97316", "#f59e0b", "#84cc16", "#22c55e", "#10b981",
@@ -43,6 +44,7 @@ export default function EditCategoryPage() {
   const params = useParams();
   const id = params.id as string;
   const utils = api.useUtils();
+  const { trackEvent } = useAnalytics();
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -67,6 +69,7 @@ export default function EditCategoryPage() {
     onSuccess: async () => {
       await utils.category.getCategories.invalidate();
       await utils.category.getCategory.invalidate({ id });
+      trackEvent("category_updated", { type: category?.type ?? "" });
       router.back();
     },
   });
@@ -74,6 +77,7 @@ export default function EditCategoryPage() {
   const deleteCategory = api.category.deleteCategory.useMutation({
     onSuccess: async () => {
       await utils.category.getCategories.invalidate();
+      trackEvent("category_deleted");
       router.back();
     },
   });

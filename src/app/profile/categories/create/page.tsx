@@ -13,6 +13,7 @@ import { api } from "@/trpc/react";
 import { useActiveWorkspace } from "@/components/providers/workspace-provider";
 import { CategoryIconPicker } from "@/components/categories/CategoryIconPicker";
 import { DEFAULT_CATEGORY_ICON } from "@/lib/category-icons";
+import { useAnalytics } from "@/hooks/use-analytics";
 
 const CATEGORY_COLORS = [
   "#ef4444", "#f97316", "#f59e0b", "#84cc16", "#22c55e", "#10b981",
@@ -36,6 +37,7 @@ function CreateCategoryForm() {
 
   const { workspaceId } = useActiveWorkspace();
   const utils = api.useUtils();
+  const { trackEvent } = useAnalytics();
 
   const form = useForm<CreateCategoryValues>({
     resolver: zodResolver(createCategorySchema),
@@ -50,6 +52,7 @@ function CreateCategoryForm() {
   const createCategory = api.category.createCategory.useMutation({
     onSuccess: async () => {
       await utils.category.getCategories.invalidate();
+      trackEvent("category_created", { type: form.getValues().type });
       router.back();
     },
   });

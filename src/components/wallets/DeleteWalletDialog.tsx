@@ -14,6 +14,7 @@ import {
 import { formatIDR } from "@/lib/formatIDR";
 import { api } from "@/trpc/react";
 import { useRouter } from "next/navigation";
+import { useAnalytics } from "@/hooks/use-analytics";
 
 interface DeleteWalletDialogProps {
   open: boolean;
@@ -32,10 +33,12 @@ export function DeleteWalletDialog({
 }: DeleteWalletDialogProps) {
   const router = useRouter();
   const utils = api.useUtils();
+  const { trackEvent } = useAnalytics();
 
   const deleteMutation = api.wallet.deleteWallet.useMutation({
     onSuccess: () => {
       void utils.wallet.getWallets.invalidate();
+      trackEvent("wallet_deleted");
       onOpenChange(false);
       router.push("/wallets");
     },

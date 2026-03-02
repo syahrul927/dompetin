@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/trpc/react";
 import { useActiveWorkspace } from "@/components/providers/workspace-provider";
+import { useAnalytics } from "@/hooks/use-analytics";
 import { Loader2 } from "lucide-react";
 
 interface CreateWorkspaceDrawerProps {
@@ -30,12 +31,15 @@ export function CreateWorkspaceDrawer({
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("💼");
   const { setWorkspaceId } = useActiveWorkspace();
+  const { trackEvent } = useAnalytics();
   const utils = api.useUtils();
 
   const createWorkspace = api.workspace.createWorkspace.useMutation({
     onSuccess: async (data) => {
       // Invalidate queries so the new workspace shows up in lists
       await utils.workspace.getWorkspaces.invalidate();
+
+      trackEvent("workspace_created");
 
       // Auto-select the newly created workspace
       if (data && data[0]?.id) {
