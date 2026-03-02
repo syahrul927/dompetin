@@ -4,14 +4,17 @@ import React, { useState } from "react";
 import { authClient } from "@/server/better-auth/client";
 import { useRouter } from "next/navigation";
 import { LogOut, Loader2 } from "lucide-react";
+import { useAnalytics } from "@/hooks/use-analytics";
 
 export function LogoutButton() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const { trackEvent } = useAnalytics();
 
   const handleLogout = async () => {
     setIsLoading(true);
     try {
+      trackEvent("logout");
       await authClient.signOut();
       localStorage.removeItem("dompetin_workspace_id");
       router.push("/login");

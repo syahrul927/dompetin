@@ -6,11 +6,13 @@ import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { useActiveWorkspace } from "@/components/providers/workspace-provider";
+import { useAnalytics } from "@/hooks/use-analytics";
 
 export default function InvitationsPage() {
   const router = useRouter();
   const utils = api.useUtils();
   const { setWorkspaceId } = useActiveWorkspace();
+  const { trackEvent } = useAnalytics();
 
   const { data: invitations, isLoading } = api.workspace.getPendingInvitations.useQuery();
 
@@ -18,6 +20,8 @@ export default function InvitationsPage() {
     onSuccess: async (_, variables) => {
       await utils.workspace.getPendingInvitations.invalidate();
       await utils.workspace.getWorkspaces.invalidate();
+
+      trackEvent(variables.accept ? "invitation_accepted" : "invitation_rejected");
 
       // If accepted, find the workspace ID and switch to it
       if (variables.accept && invitations) {

@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { TransactionActionSheet } from "@/components/transaction/TransactionActionSheet";
 import { AddTransactionSheet } from "@/components/transaction/AddTransactionSheet";
 import { authClient } from "@/server/better-auth/client";
+import { useAnalytics } from "@/hooks/use-analytics";
 
 interface Transaction {
   id: string;
@@ -33,6 +34,7 @@ export function RecentTransactions({
   isLoading,
 }: RecentTransactionsProps) {
   const { data: session } = authClient.useSession();
+  const { trackEvent } = useAnalytics();
   const [actionTx, setActionTx] = useState<Transaction | null>(null);
   const [editTx, setEditTx] = useState<Record<string, unknown> | null>(null);
 
@@ -73,11 +75,22 @@ export function RecentTransactions({
     <div>
       <SectionHeader
         title="Transaksi Terbaru"
-        action={{ label: "Lihat Semua →", href: "/transactions" }}
+        action={{
+          label: "Lihat Semua →",
+          href: "/transactions",
+          onClick: () => trackEvent("dashboard_view_all_transactions_clicked"),
+        }}
       />
       <Card className="divide-y divide-border rounded-[20px] px-4">
         {transactions.map((transaction) => (
-          <TransactionRow key={transaction.id} transaction={transaction} onClick={() => setActionTx(transaction)} />
+          <TransactionRow
+            key={transaction.id}
+            transaction={transaction}
+            onClick={() => {
+              setActionTx(transaction);
+              trackEvent("transaction_details_viewed", { source: "dashboard" });
+            }}
+          />
         ))}
       </Card>
 

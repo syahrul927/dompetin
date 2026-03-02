@@ -10,6 +10,7 @@ import { useActiveWorkspace } from "@/components/providers/workspace-provider";
 import { authClient } from "@/server/better-auth/client";
 import { api } from "@/trpc/react";
 import { getWalletContext } from "@/lib/transaction-helpers";
+import { useAnalytics } from "@/hooks/use-analytics";
 
 /**
  * Main Dashboard page - landing page after authentication.
@@ -18,6 +19,7 @@ import { getWalletContext } from "@/lib/transaction-helpers";
 export default function DashboardPage() {
   const { workspaceId } = useActiveWorkspace();
   const { data: session } = authClient.useSession();
+  const { trackEvent } = useAnalytics();
 
   const hasWorkspace = !!workspaceId;
 
@@ -31,6 +33,7 @@ export default function DashboardPage() {
     const next = !showBalance;
     setShowBalance(next);
     localStorage.setItem("dompetin_show_balance", String(next));
+    trackEvent("balance_visibility_toggled", { visible: next });
   };
 
   // Workspace info

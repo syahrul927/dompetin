@@ -10,6 +10,7 @@ import { Plus, Wallet } from "lucide-react";
 import { api } from "@/trpc/react";
 import { useState } from "react";
 import { useActiveWorkspace } from "@/components/providers/workspace-provider";
+import { useAnalytics } from "@/hooks/use-analytics";
 
 /**
  * Wallets list page — shows all wallets in the active workspace.
@@ -17,6 +18,7 @@ import { useActiveWorkspace } from "@/components/providers/workspace-provider";
 export default function WalletsPage() {
   const router = useRouter();
   const { workspaceId } = useActiveWorkspace();
+  const { trackEvent } = useAnalytics();
   const [showCreateSheet, setShowCreateSheet] = useState(false);
 
   // Fetch current workspace info for the header
@@ -75,7 +77,10 @@ export default function WalletsPage() {
               <WalletListItem
                 wallet={w}
                 isFirst={index === 0}
-                onClick={() => router.push(`/wallets/${w.id}`)}
+                onClick={() => {
+                  trackEvent("wallet_details_viewed", { type: w.type });
+                  router.push(`/wallets/${w.id}`);
+                }}
               />
             </div>
           ))}
@@ -85,7 +90,10 @@ export default function WalletsPage() {
           <Button
             variant="outline"
             className="h-14 w-full rounded-[20px] border-dashed border-primary/40 text-sm font-semibold text-primary hover:bg-primary/5"
-            onClick={() => setShowCreateSheet(true)}
+            onClick={() => {
+              setShowCreateSheet(true);
+              trackEvent("wallet_create_initiated");
+            }}
           >
             <Plus size={18} className="mr-2" />
             Tambah Dompet

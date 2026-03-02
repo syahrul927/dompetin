@@ -8,6 +8,7 @@ import {
   getInstallInstructions,
   type PWAPlatform,
 } from "@/lib/pwa/pwa-helpers";
+import { useAnalytics } from "@/hooks/use-analytics";
 
 interface InstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -20,6 +21,7 @@ export function InstallPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
   const [platform, setPlatform] = useState<PWAPlatform>("unknown");
   const [isInstalling, setIsInstalling] = useState(false);
+  const { trackEvent } = useAnalytics();
 
   useEffect(() => {
     // Detect platform
@@ -38,6 +40,7 @@ export function InstallPrompt() {
       setDeferredPrompt(e as InstallPromptEvent);
       // Update UI to notify the user they can add to home screen
       setShowPrompt(true);
+      trackEvent("pwa_prompt_shown", { platform: detectPlatform() });
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
@@ -48,6 +51,7 @@ export function InstallPrompt() {
       setDeferredPrompt(null);
       setShowPrompt(false);
       console.log("[PWA] App was installed");
+      trackEvent("pwa_installed", { method: "automatic" });
     };
 
     window.addEventListener("appinstalled", handleAppInstalled);
@@ -57,6 +61,7 @@ export function InstallPrompt() {
       const timer = setTimeout(() => {
         if (canShowInstallPrompt()) {
           setShowPrompt(true);
+          trackEvent("pwa_prompt_shown", { platform: "ios" });
         }
       }, 30000); // Show after 30 seconds
 
@@ -77,16 +82,18 @@ export function InstallPrompt() {
       );
       window.removeEventListener("appinstalled", handleAppInstalled);
     };
-  }, [platform]);
+  }, [platform, trackEvent]);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) {
       // For iOS or when no deferred prompt is available, show instructions
       alert(getInstallInstructions(platform));
+      trackEvent("pwa_install_instructions_viewed", { platform });
       return;
     }
 
     setIsInstalling(true);
+    trackEvent("pwa_install_clicked", { platform });
 
     try {
       // Show the install prompt
@@ -96,8 +103,10 @@ export function InstallPrompt() {
 
       if (outcome === "accepted") {
         console.log("[PWA] User accepted the install prompt");
+        trackEvent("pwa_install_accepted", { platform });
       } else {
         console.log("[PWA] User dismissed the install prompt");
+        trackEvent("pwa_install_dismissed", { platform });
       }
 
       // Clear the deferredPrompt
@@ -113,6 +122,7 @@ export function InstallPrompt() {
   const handleDismiss = () => {
     setShowPrompt(false);
     dismissInstall();
+    trackEvent("pwa_prompt_dismissed", { platform });
   };
 
   if (!showPrompt) {

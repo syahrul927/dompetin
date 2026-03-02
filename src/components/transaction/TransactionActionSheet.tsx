@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, Loader2 } from "lucide-react";
+import { useAnalytics } from "@/hooks/use-analytics";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,6 +38,7 @@ interface Props {
 
 export function TransactionActionSheet({ open, onOpenChange, transaction, onEdit, currentUserId }: Props) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const { trackEvent } = useAnalytics();
   const deleteTx = api.transaction.deleteTransaction.useMutation();
   const utils = api.useUtils();
 
@@ -51,6 +53,7 @@ export function TransactionActionSheet({ open, onOpenChange, transaction, onEdit
       await utils.transaction.getDashboardSummary.invalidate();
       await utils.wallet.getWallets.invalidate();
       await utils.wallet.getWallet.invalidate();
+      trackEvent("transaction_deleted");
       setShowDeleteConfirm(false);
       onOpenChange(false);
     } catch (e) {

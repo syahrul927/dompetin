@@ -21,7 +21,7 @@ export function SectionHeader({ title, action }: SectionHeaderProps) {
       {action && (
         <>
           {action.href ? (
-            <Link href={action.href}>
+            <Link href={action.href} onClick={action.onClick}>
               <Button
                 variant="link"
                 className="h-auto p-0 text-[13px] font-medium text-primary"

@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, UserPlus } from "lucide-react";
 
 import { useActiveWorkspace } from "@/components/providers/workspace-provider";
+import { useAnalytics } from "@/hooks/use-analytics";
 import { api } from "@/trpc/react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -23,6 +24,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function WorkspacePage() {
   const router = useRouter();
   const { workspaceId, setWorkspaceId } = useActiveWorkspace();
+  const { trackEvent } = useAnalytics();
   const [showCreateDrawer, setShowCreateDrawer] = useState(false);
   const [showInviteDrawer, setShowInviteDrawer] = useState(false);
 
@@ -85,6 +87,7 @@ export default function WorkspacePage() {
                   isActive={workspace.id === workspaceId}
                   onSelect={() => {
                     setWorkspaceId(workspace.id);
+                    trackEvent("workspace_switched");
                     router.push("/dashboard");
                   }}
                 />
@@ -94,7 +97,10 @@ export default function WorkspacePage() {
             {/* Create Workspace Button */}
             <Button
               variant="outline"
-              onClick={() => setShowCreateDrawer(true)}
+              onClick={() => {
+                setShowCreateDrawer(true);
+                trackEvent("workspace_create_initiated");
+              }}
               className="h-14 w-full rounded-[20px] border-dashed border-primary/40 text-sm font-semibold text-primary hover:bg-primary/5"
             >
               <Plus size={18} className="mr-2" />
@@ -112,7 +118,10 @@ export default function WorkspacePage() {
                 isOwner
                   ? {
                       label: "Undang",
-                      onClick: () => setShowInviteDrawer(true),
+                      onClick: () => {
+                        setShowInviteDrawer(true);
+                        trackEvent("workspace_invite_initiated");
+                      },
                     }
                   : undefined
               }
@@ -127,7 +136,10 @@ export default function WorkspacePage() {
             {isOwner && (
               <Button
                 variant="outline"
-                onClick={() => setShowInviteDrawer(true)}
+                onClick={() => {
+                  setShowInviteDrawer(true);
+                  trackEvent("workspace_invite_initiated");
+                }}
                 className="mt-3 h-12 w-full rounded-[20px] border-dashed border-primary/40 text-sm font-semibold text-primary hover:bg-primary/5"
               >
                 <UserPlus size={18} className="mr-2" />

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { detectPlatform, canShowInstallPrompt, dismissInstall } from "@/lib/pwa/pwa-helpers";
+import { useAnalytics } from "@/hooks/use-analytics";
 
 interface InstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -15,6 +16,7 @@ export function InstallBanner() {
   const [platform, setPlatform] = useState("desktop");
   const [isInstalling, setIsInstalling] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const { trackEvent } = useAnalytics();
 
   useEffect(() => {
     // Detect platform
@@ -35,6 +37,7 @@ export function InstallBanner() {
       setTimeout(() => {
         if (canShowInstallPrompt()) {
           setShowBanner(true);
+          trackEvent("pwa_banner_shown", { platform: detectPlatform() });
           // Trigger animation
           setTimeout(() => setIsVisible(true), 50);
         }
@@ -48,6 +51,7 @@ export function InstallBanner() {
       setDeferredPrompt(null);
       setShowBanner(false);
       setIsVisible(false);
+      trackEvent("pwa_installed", { method: "banner" });
     };
 
     window.addEventListener("appinstalled", handleAppInstalled);
@@ -66,6 +70,7 @@ export function InstallBanner() {
         setTimeout(() => {
           if (canShowInstallPrompt()) {
             setShowBanner(true);
+            trackEvent("pwa_banner_shown", { platform: "ios" });
             setTimeout(() => setIsVisible(true), 50);
           }
         }, 1000);
@@ -79,7 +84,7 @@ export function InstallBanner() {
       );
       window.removeEventListener("appinstalled", handleAppInstalled);
     };
-  }, [platform]);
+  }, [platform, trackEvent]);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) {
@@ -89,10 +94,12 @@ export function InstallBanner() {
           ? "To install: Tap the Share button, then 'Add to Home Screen'"
           : "To install: Look for the install icon in your browser's menu";
       alert(instructions);
+      trackEvent("pwa_banner_instructions_viewed", { platform });
       return;
     }
 
     setIsInstalling(true);
+    trackEvent("pwa_banner_install_clicked", { platform });
 
     try {
       await deferredPrompt.prompt();
@@ -100,8 +107,10 @@ export function InstallBanner() {
 
       if (outcome === "accepted") {
         console.log("[PWA] User accepted the install prompt");
+        trackEvent("pwa_banner_install_accepted", { platform });
       } else {
         console.log("[PWA] User dismissed the install prompt");
+        trackEvent("pwa_banner_install_dismissed", { platform });
       }
 
       setDeferredPrompt(null);
@@ -120,6 +129,7 @@ export function InstallBanner() {
       setShowBanner(false);
     }, 300); // Wait for animation to complete
     dismissInstall();
+    trackEvent("pwa_banner_dismissed", { platform });
   };
 
   if (!showBanner) {

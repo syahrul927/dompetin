@@ -6,6 +6,7 @@ import { authClient } from "@/server/better-auth/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Chrome } from "lucide-react";
 import Link from "next/link";
+import { useAnalytics } from "@/hooks/use-analytics";
 
 /**
  * Login page - Google OAuth only
@@ -14,11 +15,13 @@ import Link from "next/link";
 export default function LoginPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { trackEvent } = useAnalytics();
 
   const handleGoogleSignIn = async () => {
     try {
       setError("");
       setIsLoading(true);
+      trackEvent("login_initiated", { method: "google" });
 
       // Sign in with Google OAuth
       await authClient.signIn.social({

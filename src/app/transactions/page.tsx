@@ -13,6 +13,7 @@ import { Loader2, Calendar } from "lucide-react";
 import { TransactionActionSheet } from "@/components/transaction/TransactionActionSheet";
 import { AddTransactionSheet } from "@/components/transaction/AddTransactionSheet";
 import { getWalletContext } from "@/lib/transaction-helpers";
+import { useAnalytics } from "@/hooks/use-analytics";
 import {
   Select,
   SelectContent,
@@ -69,6 +70,7 @@ function formatGroupDate(date: Date | string): string {
 export default function TransactionsPage() {
   const { workspaceId } = useActiveWorkspace();
   const { data: session } = authClient.useSession();
+  const { trackEvent } = useAnalytics();
 
   const now = new Date();
   const [month, setMonth] = useState(now.getUTCMonth() + 1);
@@ -153,7 +155,11 @@ export default function TransactionsPage() {
         <div className="flex items-center gap-2 mb-6">
           <Select
             value={month.toString()}
-            onValueChange={(val) => setMonth(parseInt(val))}
+            onValueChange={(val) => {
+              const m = parseInt(val);
+              setMonth(m);
+              trackEvent("transactions_filter_month_changed", { month: m });
+            }}
           >
             <SelectTrigger className="h-9 rounded-full bg-secondary/50 border-none px-4 text-xs font-medium w-fit">
               <Calendar size={14} className="mr-2 text-muted-foreground" />
@@ -170,7 +176,11 @@ export default function TransactionsPage() {
 
           <Select
             value={year.toString()}
-            onValueChange={(val) => setYear(parseInt(val))}
+            onValueChange={(val) => {
+              const y = parseInt(val);
+              setYear(y);
+              trackEvent("transactions_filter_year_changed", { year: y });
+            }}
           >
             <SelectTrigger className="h-9 rounded-full bg-secondary/50 border-none px-4 text-xs font-medium w-fit">
               <SelectValue placeholder="Tahun" />
@@ -251,7 +261,12 @@ export default function TransactionsPage() {
                       <TransactionRow
                         key={tx.id}
                         transaction={tx}
-                        onClick={() => setActionTx(tx)}
+                        onClick={() => {
+                          setActionTx(tx);
+                          trackEvent("transaction_details_viewed", {
+                            source: "transactions_list",
+                          });
+                        }}
                       />
                     ))}
                   </Card>
@@ -264,7 +279,12 @@ export default function TransactionsPage() {
               <div className="flex justify-center pt-2">
                 <Button
                   variant="ghost"
-                  onClick={() => setLimit((prev) => prev + PAGE_SIZE)}
+                  onClick={() => {
+                    setLimit((prev) => prev + PAGE_SIZE);
+                    trackEvent("transactions_load_more_clicked", {
+                      current_limit: limit + PAGE_SIZE,
+                    });
+                  }}
                   className="text-primary text-sm font-medium h-10 rounded-full hover:bg-primary/5"
                 >
                   <Loader2

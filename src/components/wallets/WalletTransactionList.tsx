@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { TransactionActionSheet } from "@/components/transaction/TransactionActionSheet";
 import { AddTransactionSheet } from "@/components/transaction/AddTransactionSheet";
 import { authClient } from "@/server/better-auth/client";
+import { useAnalytics } from "@/hooks/use-analytics";
 
 interface Transaction {
   id: string;
@@ -38,6 +39,7 @@ export function WalletTransactionList({
   monthLabel,
 }: WalletTransactionListProps) {
   const { data: session } = authClient.useSession();
+  const { trackEvent } = useAnalytics();
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [actionTx, setActionTx] = useState<Transaction | null>(null);
   const [editTx, setEditTx] = useState<Record<string, unknown> | null>(null);
@@ -59,7 +61,14 @@ export function WalletTransactionList({
       <Card className="divide-y divide-border rounded-[20px] px-4">
         {visibleTransactions.length > 0 ? (
           visibleTransactions.map((tx) => (
-            <TransactionRow key={tx.id} transaction={tx} onClick={() => setActionTx(tx)} />
+            <TransactionRow
+              key={tx.id}
+              transaction={tx}
+              onClick={() => {
+                setActionTx(tx);
+                trackEvent("transaction_details_viewed", { source: "wallet_details" });
+              }}
+            />
           ))
         ) : (
           <p className="py-8 text-center text-sm text-muted-foreground">
@@ -72,7 +81,13 @@ export function WalletTransactionList({
         <div className="mt-3 flex justify-center">
           <Button
             variant="outline"
-            onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}
+            onClick={() => {
+              const nextCount = visibleCount + PAGE_SIZE;
+              setVisibleCount(nextCount);
+              trackEvent("wallet_transactions_load_more_clicked", {
+                current_limit: nextCount,
+              });
+            }}
             className="h-10 rounded-full border-primary/40 text-sm font-medium text-primary hover:bg-primary/5"
           >
             Muat Lebih Banyak

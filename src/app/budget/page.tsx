@@ -10,9 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { CreateBudgetDrawer } from "@/components/budget/CreateBudgetDrawer";
 import { EditBudgetDrawer } from "@/components/budget/EditBudgetDrawer";
+import { useAnalytics } from "@/hooks/use-analytics";
 
 export default function BudgetPage() {
   const { workspaceId } = useActiveWorkspace();
+  const { trackEvent } = useAnalytics();
   const [showCreate, setShowCreate] = useState(false);
   const [selectedBudget, setSelectedBudget] = useState<string | null>(null);
 
@@ -43,7 +45,10 @@ export default function BudgetPage() {
           <BudgetCard
             key={budget.id}
             budget={budget as React.ComponentProps<typeof BudgetCard>["budget"]}
-            onClick={() => setSelectedBudget(budget.id)}
+            onClick={() => {
+              setSelectedBudget(budget.id);
+              trackEvent("budget_details_viewed");
+            }}
           />
         ))}
 
@@ -52,7 +57,10 @@ export default function BudgetPage() {
             <Button
               variant="outline"
               className="h-12 rounded-full border-primary/20 text-primary hover:bg-primary/5 px-6"
-              onClick={() => setShowCreate(true)}
+              onClick={() => {
+                setShowCreate(true);
+                trackEvent("budget_create_initiated");
+              }}
             >
               <Plus className="mr-2 h-4 w-4" /> Tambah Anggaran Baru
             </Button>

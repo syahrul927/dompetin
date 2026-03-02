@@ -9,6 +9,7 @@ import { CategoryListItem } from "@/components/categories/CategoryListItem";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAnalytics } from "@/hooks/use-analytics";
 import Link from "next/link";
 
 type CategoryType = "expense" | "income";
@@ -16,6 +17,7 @@ type CategoryType = "expense" | "income";
 export default function CategoriesPage() {
   const router = useRouter();
   const { workspaceId } = useActiveWorkspace();
+  const { trackEvent } = useAnalytics();
   const [activeTab, setActiveTab] = useState<CategoryType>("expense");
 
   const { data: categories, isLoading } = api.category.getCategories.useQuery(
@@ -35,7 +37,10 @@ export default function CategoriesPage() {
         {/* Type Toggle */}
         <div className="mb-6 flex rounded-xl bg-muted/50 p-1">
           <button
-            onClick={() => setActiveTab("expense")}
+            onClick={() => {
+              setActiveTab("expense");
+              trackEvent("categories_tab_changed", { type: "expense" });
+            }}
             className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-all ${
               activeTab === "expense"
                 ? "bg-background text-foreground shadow-sm"
@@ -45,7 +50,10 @@ export default function CategoriesPage() {
             Pengeluaran
           </button>
           <button
-            onClick={() => setActiveTab("income")}
+            onClick={() => {
+              setActiveTab("income");
+              trackEvent("categories_tab_changed", { type: "income" });
+            }}
             className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-all ${
               activeTab === "income"
                 ? "bg-background text-foreground shadow-sm"
@@ -87,7 +95,10 @@ export default function CategoriesPage() {
 
         {/* Add Button */}
         <div className="fixed bottom-0 left-1/2 w-full max-w-lg -translate-x-1/2 bg-background/80 p-5 backdrop-blur-md">
-          <Link href={`/profile/categories/create?type=${activeTab}`}>
+          <Link
+            href={`/profile/categories/create?type=${activeTab}`}
+            onClick={() => trackEvent("category_create_initiated", { type: activeTab })}
+          >
             <Button className="h-14 w-full rounded-full text-base font-bold shadow-md shadow-primary/20">
               <Plus size={20} className="mr-2" /> Tambah Kategori
             </Button>

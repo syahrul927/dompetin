@@ -2,12 +2,19 @@
 
 import { PageHeader } from "@/components/shared/PageHeader";
 import { useRouter } from "next/navigation";
+import { useAnalytics } from "@/hooks/use-analytics";
+import { useEffect } from "react";
 
 /**
  * Goals page - placeholder for future implementation.
  */
 export default function GoalsPage() {
   const router = useRouter();
+  const { trackEvent } = useAnalytics();
+
+  useEffect(() => {
+    trackEvent("goals_page_viewed");
+  }, [trackEvent]);
 
   return (
     <>

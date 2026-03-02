@@ -5,9 +5,11 @@ import { api } from "@/trpc/react";
 import { Mail, MessageCircle, Instagram } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
+import { useAnalytics } from "@/hooks/use-analytics";
 
 export default function AboutPage() {
   const router = useRouter();
+  const { trackEvent } = useAnalytics();
   const { data: about, isLoading } = api.getAboutInfo.useQuery();
 
   const contacts = [
@@ -75,6 +77,7 @@ export default function AboutPage() {
                       href={contact.href}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() => trackEvent("contact_link_clicked", { platform: contact.key })}
                       className="flex items-center gap-4 rounded-2xl bg-card p-4 transition-colors active:bg-muted/50"
                     >
                       <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
