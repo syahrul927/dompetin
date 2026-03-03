@@ -9,6 +9,7 @@ import {
 } from "@/server/db/schema";
 
 import { protectedProcedure } from "@/server/api/trpc";
+import { getPeriodBoundaries } from "@/lib/date-utils";
 
 /**
  * Budget tRPC Router
@@ -151,12 +152,10 @@ export const budgetRouter = {
       z.object({
         name: z.string().min(1).max(255),
         amount: z.number().positive(), // Amount in cents
-        period: z.enum(["monthly", "weekly", "yearly"]).default("monthly"),
+        period: z.enum(["daily", "weekly", "monthly", "yearly"]).default("monthly"),
         icon: z.string().min(1).max(50).default("💰"),
         color: z.string().min(1).max(7).default("#3b82f6"),
         workspaceId: z.string().uuid(),
-        startDate: z.string().datetime().optional(),
-        endDate: z.string().datetime().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -174,8 +173,9 @@ export const budgetRouter = {
 
       // Convert amount from cents to decimal format
       const amountDb = (input.amount / 100).toFixed(2);
-      const startDateDb = input.startDate ? new Date(input.startDate) : new Date();
-      const endDateDb = input.endDate ? new Date(input.endDate) : null;
+
+      // Calculate boundaries
+      const { start, end } = getPeriodBoundaries(input.period);
 
       // Create budget
       const [newBudget] = await db.insert(budgetSchema).values({
@@ -186,8 +186,8 @@ export const budgetRouter = {
         icon: input.icon,
         color: input.color,
         workspaceId: input.workspaceId,
-        startDate: startDateDb,
-        endDate: endDateDb,
+        startDate: start,
+        endDate: end,
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
