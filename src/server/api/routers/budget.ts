@@ -56,7 +56,16 @@ export const budgetRouter = {
       if (input.isActive) {
         for (const b of budgets) {
           // Check if budget has expired
-          if (b.endDate && b.endDate < now) {
+          // Use UTC adjustment logic to compare against midnight
+          const adjustedNow = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+
+          // Drizzle parses date fields to strings like '2026-03-01' by default, or returns Date objects depending on adapter
+          // Safest way is to ensure we have a numeric timestamp
+          const endDateTimestamp = new Date(b.endDate as Date | string).getTime();
+          const todayTimestamp = adjustedNow.getTime();
+
+          // We consider it expired if today is strictly AFTER the end date
+          if (b.endDate && endDateTimestamp < todayTimestamp - 86400000) { // subtracting 24h as a buffer since adjustedNow might be in the middle of the day
             // Archive old budget
             await db.update(budgetSchema)
               .set({ isActive: false, updatedAt: new Date() })
