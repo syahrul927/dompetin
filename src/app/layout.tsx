@@ -18,8 +18,8 @@ import { AppShell } from "@/components/shared/AppShell";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
 
 export const metadata: Metadata = {
-  title: "Dompetin - Personal Finance Management",
-  description: "Manage your personal finances with Dompetin",
+  title: "Dompetin - Catat Keuangan Tanpa Ribet",
+  description: "Aplikasi pencatat keuangan pribadi dengan fitur scan struk AI. Catat pemasukan dan pengeluaran harian jadi lebih gampang.",
   icons: [
     { rel: "icon", url: "/favicon.ico" },
     {
