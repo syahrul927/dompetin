@@ -21,7 +21,8 @@ export const env = createEnv({
     ABOUT_EMAIL: z.string().optional(),
     ABOUT_WHATSAPP: z.string().optional(),
     ABOUT_INSTAGRAM: z.string().optional(),
-    GEMINI_API_KEY: z.string(),
+    GEMINI_API_KEY: z.string().optional(),
+    GROQ_API_KEY: z.string(),
   },
 
   /**
@@ -50,6 +51,7 @@ export const env = createEnv({
     ABOUT_WHATSAPP: process.env.ABOUT_WHATSAPP,
     ABOUT_INSTAGRAM: process.env.ABOUT_INSTAGRAM,
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+    GROQ_API_KEY: process.env.GROQ_API_KEY,
     NEXT_PUBLIC_UMAMI_WEBSITE_ID: process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID,
     NEXT_PUBLIC_UMAMI_URL: process.env.NEXT_PUBLIC_UMAMI_URL,
   },
