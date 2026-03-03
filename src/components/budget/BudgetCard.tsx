@@ -16,15 +16,30 @@ interface BudgetCardProps {
     startDate: string | Date;
     endDate: string | Date | null;
     isActive?: boolean;
+    period?: string;
   };
   onClick: () => void;
 }
+
+const periodLabels: Record<string, string> = {
+  daily: "Harian",
+  weekly: "Mingguan",
+  monthly: "Bulanan",
+  yearly: "Tahunan",
+};
 
 export function BudgetCard({ budget, onClick }: BudgetCardProps) {
   const Icon = getCategoryIcon(budget.icon);
   const percentage = Math.min((budget.spent / budget.amount) * 100, 100);
   const isOverBudget = budget.spent > budget.amount;
   const isArchived = budget.isActive === false;
+
+  const startDateStr = format(new Date(budget.startDate), "dd MMM yyyy", { locale: localeId });
+  const endDateStr = budget.endDate ? format(new Date(budget.endDate), "dd MMM yyyy", { locale: localeId }) : "";
+
+  // Format nicely for daily: "03 Mar 2026" instead of "03 Mar 2026 - 03 Mar 2026"
+  const isDaily = budget.period === "daily" || startDateStr === endDateStr;
+  const dateDisplay = isDaily ? startDateStr : `${startDateStr}${endDateStr ? ` - ${endDateStr}` : ""}`;
 
   return (
     <Card
@@ -49,10 +64,14 @@ export function BudgetCard({ budget, onClick }: BudgetCardProps) {
                   Arsip
                 </span>
               )}
+              {budget.period && periodLabels[budget.period] && !isArchived && (
+                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                  {periodLabels[budget.period]}
+                </span>
+              )}
             </div>
             <span className="text-xs text-muted-foreground">
-              {format(new Date(budget.startDate), "dd MMM yyyy", { locale: localeId })}
-              {budget.endDate ? ` - ${format(new Date(budget.endDate), "dd MMM yyyy", { locale: localeId })}` : ""}
+              {dateDisplay}
             </span>
           </div>
         </div>
