@@ -127,10 +127,17 @@ export const budgetRouter = {
             )
           );
 
+        const spent = Number(spentResult[0]?.totalSpent ?? 0);
+
+        // If this is an archived budget query and there's 0 usage, filter it out
+        if (!input.isActive && spent === 0) {
+            return null;
+        }
+
         return {
           ...b,
           amount: parseFloat(b.amount as string),
-          spent: Number(spentResult[0]?.totalSpent ?? 0),
+          spent,
         };
       }));
 
