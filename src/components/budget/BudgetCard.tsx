@@ -51,8 +51,8 @@ export function BudgetCard({ budget, onClick }: BudgetCardProps) {
               )}
             </div>
             <span className="text-xs text-muted-foreground">
-              {format(new Date(budget.startDate), "d MMM yyyy", { locale: localeId })}
-              {budget.endDate ? ` - ${format(new Date(budget.endDate), "d MMM yyyy", { locale: localeId })}` : ""}
+              {format(new Date(budget.startDate), "dd MMM yyyy", { locale: localeId })}
+              {budget.endDate ? ` - ${format(new Date(budget.endDate), "dd MMM yyyy", { locale: localeId })}` : ""}
             </span>
           </div>
         </div>
