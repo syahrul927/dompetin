@@ -9,7 +9,7 @@ import {
 } from "@/server/db/schema";
 
 import { protectedProcedure } from "@/server/api/trpc";
-import { getPeriodBoundaries } from "@/lib/date-utils";
+import { getPeriodBoundaries, type BudgetPeriod } from "@/lib/date-utils";
 
 /**
  * Budget tRPC Router
@@ -40,56 +40,92 @@ export const budgetRouter = {
         throw new Error("Access denied to this workspace");
       }
 
+      // 1. Fetch requested budgets
+      const budgets = await db.query.budget.findMany({
+        where: and(
+          eq(budgetSchema.workspaceId, input.workspaceId),
+          eq(budgetSchema.isActive, input.isActive)
+        ),
+        orderBy: [desc(budgetSchema.createdAt)],
+      });
+
       const now = new Date();
-      const currentYear = now.getUTCFullYear();
-      const currentMonth = now.getUTCMonth() + 1;
-      const startOfMonth = new Date(Date.UTC(currentYear, currentMonth - 1, 1));
-      const endOfMonth = new Date(Date.UTC(currentYear, currentMonth, 0));
+      const updatedBudgets = [];
 
-      // Use a subquery to get total spent per category in the current month
-      const spentSubquery = db
-        .select({
-          budgetId: transaction.budgetId,
-          totalSpent: sql<number>`COALESCE(SUM(ABS(${transaction.amount}::numeric)), 0)`.as('total_spent'),
-        })
-        .from(transaction)
-        .where(
-          and(
-            eq(transaction.workspaceId, input.workspaceId),
-            eq(transaction.type, "expense"),
-            isNull(transaction.deletedAt),
-            gte(transaction.date, startOfMonth),
-            lte(transaction.date, endOfMonth)
-          )
-        )
-        .groupBy(transaction.budgetId)
-        .as('spent_subquery');
+      // 2. Process Auto-Renewal for active budgets
+      if (input.isActive) {
+        for (const b of budgets) {
+          // Check if budget has expired
+          if (b.endDate && b.endDate < now) {
+            // Archive old budget
+            await db.update(budgetSchema)
+              .set({ isActive: false, updatedAt: new Date() })
+              .where(eq(budgetSchema.id, b.id));
 
-      const budgets = await db
-        .select({
-          id: budgetSchema.id,
-          name: budgetSchema.name,
-          amount: budgetSchema.amount,
-          icon: budgetSchema.icon,
-          color: budgetSchema.color,
-          spent: sql<number>`COALESCE(${spentSubquery.totalSpent}, 0)`,
-        })
-        .from(budgetSchema)
-        .leftJoin(spentSubquery, eq(budgetSchema.id, spentSubquery.budgetId))
-        .where(
-          and(
-            eq(budgetSchema.workspaceId, input.workspaceId),
-            eq(budgetSchema.isActive, input.isActive)
-          )
-        )
-        .orderBy(desc(budgetSchema.createdAt));
+            // Create new budget for current period
+            const { start, end } = getPeriodBoundaries(b.period as BudgetPeriod);
 
-      // Convert string amounts to numbers
-      return budgets.map((b) => ({
-        ...b,
-        amount: parseFloat(b.amount as unknown as string),
-        spent: Number(b.spent),
+            // Just double checking that the new start date is actually after the old end date
+            // If they are generating budgets rapidly, we don't want an infinite loop.
+            if (end.getTime() <= b.endDate.getTime()) {
+                // Failsafe in case auto-renew logic fires in a tight loop during the same calendar block
+                updatedBudgets.push(b);
+                continue;
+            }
+
+            const [newBudget] = await db.insert(budgetSchema).values({
+              name: b.name,
+              amount: b.amount,
+              spent: "0",
+              period: b.period,
+              icon: b.icon,
+              color: b.color,
+              workspaceId: b.workspaceId,
+              startDate: start,
+              endDate: end,
+              isActive: true,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            }).returning();
+
+            if (newBudget) {
+              updatedBudgets.push(newBudget);
+            }
+          } else {
+            updatedBudgets.push(b);
+          }
+        }
+      } else {
+        updatedBudgets.push(...budgets);
+      }
+
+      // 3. Calculate accurate spent amount for each budget based on its specific dates
+      const results = await Promise.all(updatedBudgets.map(async (b) => {
+        if (!b) return null;
+
+        const spentResult = await db
+          .select({
+            totalSpent: sql<number>`COALESCE(SUM(ABS(${transaction.amount}::numeric)), 0)`,
+          })
+          .from(transaction)
+          .where(
+            and(
+              eq(transaction.budgetId, b.id),
+              eq(transaction.type, "expense"),
+              isNull(transaction.deletedAt),
+              gte(transaction.date, b.startDate!),
+              b.endDate ? lte(transaction.date, b.endDate) : undefined
+            )
+          );
+
+        return {
+          ...b,
+          amount: parseFloat(b.amount as string),
+          spent: Number(spentResult[0]?.totalSpent ?? 0),
+        };
       }));
+
+      return results.filter((r): r is NonNullable<typeof r> => r !== null);
     }),
 
   /**
@@ -111,12 +147,6 @@ export const budgetRouter = {
       }
 
       // Calculate spent amount for this budget
-      const now = new Date();
-      const currentYear = now.getUTCFullYear();
-      const currentMonth = now.getUTCMonth() + 1;
-      const startOfMonth = new Date(Date.UTC(currentYear, currentMonth - 1, 1));
-      const endOfMonth = new Date(Date.UTC(currentYear, currentMonth, 0));
-
       const spentResult = await db
         .select({
           totalSpent: sql<number>`COALESCE(SUM(ABS(${transaction.amount}::numeric)), 0)`,
@@ -127,8 +157,8 @@ export const budgetRouter = {
             eq(transaction.budgetId, budgetData.id),
             eq(transaction.type, "expense"),
             isNull(transaction.deletedAt), // Exclude soft-deleted
-            gte(transaction.date, startOfMonth),
-            lte(transaction.date, endOfMonth),
+            gte(transaction.date, budgetData.startDate),
+            budgetData.endDate ? lte(transaction.date, budgetData.endDate) : undefined,
           ),
         );
 
@@ -174,8 +204,14 @@ export const budgetRouter = {
       // Convert amount from cents to decimal format
       const amountDb = (input.amount / 100).toFixed(2);
 
-      // Calculate boundaries
+      // We need to parse dates carefully to prevent timezone shift issues on insertion.
+      // Drizzle ORM's date('date', { mode: 'date' }) type parses native Date objects to ISO strings under the hood.
+      // And when they get returned, they are strings like "2026-03-01".
       const { start, end } = getPeriodBoundaries(input.period);
+
+      // Keep dates in local time shift, not pure UTC to avoid boundary bleeding if local DB timezone differs.
+      // But getPeriodBoundaries returns new Date() with the local year, month, date.
+      // That's what we want.
 
       // Create budget
       const [newBudget] = await db.insert(budgetSchema).values({
@@ -205,7 +241,7 @@ export const budgetRouter = {
         id: z.string().uuid(),
         name: z.string().min(1).max(255).optional(),
         amount: z.number().positive().optional(),
-        period: z.enum(["monthly", "weekly", "yearly"]).optional(),
+        period: z.enum(["daily", "weekly", "monthly", "yearly"]).optional(),
         icon: z.string().min(1).max(50).optional(),
         color: z.string().min(1).max(7).optional(),
         startDate: z.string().datetime().optional(),
@@ -251,6 +287,11 @@ export const budgetRouter = {
 
       if (input.period !== undefined) {
         updateData.period = input.period;
+
+        // Also update dates if period changes, so it matches the new period from today
+        const { start, end } = getPeriodBoundaries(input.period);
+        updateData.startDate = start;
+        updateData.endDate = end;
       }
 
       if (input.icon !== undefined) {

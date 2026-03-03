@@ -5,6 +5,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AmountInput } from "@/components/transaction/AmountInput";
 import { Numpad } from "@/components/shared/Numpad";
 import { api } from "@/trpc/react";
@@ -28,6 +29,7 @@ interface Budget {
   spent: number;
   icon: string;
   color: string;
+  period?: string;
   isActive?: boolean;
 }
 
@@ -41,6 +43,9 @@ export function EditBudgetDrawer({ open, onOpenChange, budget }: Props) {
   const [step, setStep] = useState<"amount" | "details">("details");
   const [amountStr, setAmountStr] = useState(budget.amount.toString());
   const [name, setName] = useState(budget.name);
+  const [period, setPeriod] = useState<"daily" | "weekly" | "monthly" | "yearly">(
+    (budget.period as "daily" | "weekly" | "monthly" | "yearly") || "monthly"
+  );
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { trackEvent } = useAnalytics();
 
@@ -57,6 +62,7 @@ export function EditBudgetDrawer({ open, onOpenChange, budget }: Props) {
     if (open) {
       setAmountStr(budget.amount.toString());
       setName(budget.name);
+      setPeriod((budget.period as "daily" | "weekly" | "monthly" | "yearly") || "monthly");
       setStep("details");
       setShowDeleteConfirm(false);
     }
@@ -70,6 +76,7 @@ export function EditBudgetDrawer({ open, onOpenChange, budget }: Props) {
         id: budget.id,
         amount: amount * 100,
         name: name.trim(),
+        period,
       });
 
       await utils.budget.getBudgets.invalidate();
@@ -151,6 +158,21 @@ export function EditBudgetDrawer({ open, onOpenChange, budget }: Props) {
                     className="h-12 rounded-2xl"
                     disabled={isArchived}
                   />
+                </div>
+
+                <div className="space-y-2 pt-2">
+                  <Label>Periode</Label>
+                  <Select value={period} onValueChange={(v: "daily" | "weekly" | "monthly" | "yearly") => setPeriod(v)} disabled={isArchived}>
+                    <SelectTrigger className="h-12 rounded-2xl">
+                      <SelectValue placeholder="Pilih periode" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">Harian</SelectItem>
+                      <SelectItem value="weekly">Mingguan</SelectItem>
+                      <SelectItem value="monthly">Bulanan</SelectItem>
+                      <SelectItem value="yearly">Tahunan</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 

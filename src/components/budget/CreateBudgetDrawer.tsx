@@ -5,6 +5,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AmountInput } from "@/components/transaction/AmountInput";
 import { Numpad } from "@/components/shared/Numpad";
 import { api } from "@/trpc/react";
@@ -21,6 +22,7 @@ export function CreateBudgetDrawer({ open, onOpenChange, workspaceId }: Props) {
   const [step, setStep] = useState<"amount" | "details">("amount");
   const [amountStr, setAmountStr] = useState("0");
   const [name, setName] = useState("");
+  const [period, setPeriod] = useState<"daily" | "weekly" | "monthly" | "yearly">("monthly");
   const { trackEvent } = useAnalytics();
 
   const utils = api.useUtils();
@@ -33,6 +35,7 @@ export function CreateBudgetDrawer({ open, onOpenChange, workspaceId }: Props) {
     setStep("amount");
     setAmountStr("0");
     setName("");
+    setPeriod("monthly");
   };
 
   const handleSubmit = async () => {
@@ -41,8 +44,9 @@ export function CreateBudgetDrawer({ open, onOpenChange, workspaceId }: Props) {
     try {
       await createBudget.mutateAsync({
         workspaceId,
-        amount,
+        amount: amount * 100,
         name: name.trim(),
+        period,
         icon: "💰", // Hardcoded for V1 speed
         color: "#3b82f6" // Hardcoded for V1 speed
       });
@@ -99,6 +103,21 @@ export function CreateBudgetDrawer({ open, onOpenChange, workspaceId }: Props) {
                   placeholder="Contoh: Makan Siang"
                   className="h-12 rounded-2xl"
                 />
+              </div>
+
+              <div className="space-y-2 pt-2">
+                <Label>Periode</Label>
+                <Select value={period} onValueChange={(v: "daily" | "weekly" | "monthly" | "yearly") => setPeriod(v)}>
+                  <SelectTrigger className="h-12 rounded-2xl">
+                    <SelectValue placeholder="Pilih periode" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">Harian</SelectItem>
+                    <SelectItem value="weekly">Mingguan</SelectItem>
+                    <SelectItem value="monthly">Bulanan</SelectItem>
+                    <SelectItem value="yearly">Tahunan</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
