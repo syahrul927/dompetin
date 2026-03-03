@@ -2,6 +2,8 @@ import React from "react";
 import { Card } from "@/components/ui/card";
 import { getCategoryIcon } from "@/lib/category-icons";
 import { formatIDR } from "@/lib/formatIDR";
+import { format } from "date-fns";
+import { id as localeId } from "date-fns/locale";
 
 interface BudgetCardProps {
   budget: {
@@ -11,6 +13,9 @@ interface BudgetCardProps {
     spent: number;
     icon: string;
     color: string;
+    startDate: string | Date;
+    endDate: string | Date | null;
+    isActive?: boolean;
   };
   onClick: () => void;
 }
@@ -19,11 +24,14 @@ export function BudgetCard({ budget, onClick }: BudgetCardProps) {
   const Icon = getCategoryIcon(budget.icon);
   const percentage = Math.min((budget.spent / budget.amount) * 100, 100);
   const isOverBudget = budget.spent > budget.amount;
+  const isArchived = budget.isActive === false;
 
   return (
     <Card
       onClick={onClick}
-      className="cursor-pointer rounded-[20px] p-5 transition-transform active:scale-[0.98] border border-border"
+      className={`cursor-pointer rounded-[20px] p-5 transition-transform active:scale-[0.98] border border-border ${
+        isArchived ? "opacity-75 grayscale-[0.2]" : ""
+      }`}
     >
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -33,8 +41,19 @@ export function BudgetCard({ budget, onClick }: BudgetCardProps) {
           >
             <Icon size={20} />
           </div>
-          <div>
-            <h3 className="font-semibold text-foreground">{budget.name}</h3>
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-foreground">{budget.name}</h3>
+              {isArchived && (
+                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                  Arsip
+                </span>
+              )}
+            </div>
+            <span className="text-xs text-muted-foreground">
+              {format(new Date(budget.startDate), "d MMM yyyy", { locale: localeId })}
+              {budget.endDate ? ` - ${format(new Date(budget.endDate), "d MMM yyyy", { locale: localeId })}` : ""}
+            </span>
           </div>
         </div>
       </div>

@@ -134,7 +134,7 @@ export function AddTransactionSheet({
   );
 
   const { data: budgets } = api.budget.getBudgets.useQuery(
-    { workspaceId },
+    { workspaceId, isActive: true },
     { enabled: open && !!workspaceId && type === "expense" },
   );
 
@@ -330,6 +330,8 @@ export function AddTransactionSheet({
         utils.transaction.getDashboardSummary.invalidate(),
         utils.wallet.getWallets.invalidate(),
         utils.wallet.getWallet.invalidate(),
+        utils.budget.getBudgets.invalidate(),
+        utils.budget.getBudget.invalidate(),
       ]);
 
       trackEvent(initialData ? "transaction_updated" : "transaction_added", {

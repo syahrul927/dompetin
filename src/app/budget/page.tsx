@@ -11,15 +11,17 @@ import { Plus } from "lucide-react";
 import { CreateBudgetDrawer } from "@/components/budget/CreateBudgetDrawer";
 import { EditBudgetDrawer } from "@/components/budget/EditBudgetDrawer";
 import { useAnalytics } from "@/hooks/use-analytics";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function BudgetPage() {
   const { workspaceId } = useActiveWorkspace();
   const { trackEvent } = useAnalytics();
   const [showCreate, setShowCreate] = useState(false);
   const [selectedBudget, setSelectedBudget] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"active" | "archived">("active");
 
   const { data: budgets, isLoading } = api.budget.getBudgets.useQuery(
-    { workspaceId },
+    { workspaceId, isActive: activeTab === "active" },
     { enabled: !!workspaceId }
   );
 
@@ -30,29 +32,62 @@ export default function BudgetPage() {
       <PageHeader title="Anggaran" />
 
       <div className="space-y-4 px-5 pt-2 pb-32">
-        {isLoading && Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton key={i} className="h-36 w-full rounded-[20px]" />
-        ))}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "active" | "archived")} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="active">Aktif</TabsTrigger>
+            <TabsTrigger value="archived">Arsip</TabsTrigger>
+          </TabsList>
 
-        {!isLoading && budgets?.length === 0 && (
-          <div className="py-20 text-center text-muted-foreground">
-            <p className="font-medium text-foreground">Belum ada anggaran</p>
-            <p className="mt-1 text-sm">Buat anggaran untuk membatasi pengeluaran Anda.</p>
-          </div>
-        )}
+          <TabsContent value="active" className="space-y-4 mt-0">
+            {isLoading && Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-36 w-full rounded-[20px]" />
+            ))}
 
-        {!isLoading && budgets?.map(budget => (
-          <BudgetCard
-            key={budget.id}
-            budget={budget as React.ComponentProps<typeof BudgetCard>["budget"]}
-            onClick={() => {
-              setSelectedBudget(budget.id);
-              trackEvent("budget_details_viewed");
-            }}
-          />
-        ))}
+            {!isLoading && budgets?.length === 0 && (
+              <div className="py-20 text-center text-muted-foreground">
+                <p className="font-medium text-foreground">Belum ada anggaran aktif</p>
+                <p className="mt-1 text-sm">Buat anggaran untuk membatasi pengeluaran Anda.</p>
+              </div>
+            )}
 
-        {!isLoading && (
+            {!isLoading && budgets?.map(budget => (
+              <BudgetCard
+                key={budget.id}
+                budget={budget as React.ComponentProps<typeof BudgetCard>["budget"]}
+                onClick={() => {
+                  setSelectedBudget(budget.id ?? null);
+                  trackEvent("budget_details_viewed");
+                }}
+              />
+            ))}
+          </TabsContent>
+
+          <TabsContent value="archived" className="space-y-4 mt-0">
+            {isLoading && Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-36 w-full rounded-[20px]" />
+            ))}
+
+            {!isLoading && budgets?.length === 0 && (
+              <div className="py-20 text-center text-muted-foreground">
+                <p className="font-medium text-foreground">Belum ada anggaran arsip</p>
+                <p className="mt-1 text-sm">Anggaran yang sudah melewati tanggal akhir akan muncul di sini.</p>
+              </div>
+            )}
+
+            {!isLoading && budgets?.map(budget => (
+              <BudgetCard
+                key={budget.id}
+                budget={budget as React.ComponentProps<typeof BudgetCard>["budget"]}
+                onClick={() => {
+                  setSelectedBudget(budget.id ?? null);
+                  trackEvent("archived_budget_details_viewed");
+                }}
+              />
+            ))}
+          </TabsContent>
+        </Tabs>
+
+        {!isLoading && activeTab === "active" && (
           <div className="mt-6 flex justify-center pb-10 pt-4">
             <Button
               variant="outline"

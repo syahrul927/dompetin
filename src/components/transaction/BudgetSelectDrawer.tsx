@@ -60,13 +60,14 @@ export function BudgetSelectDrawer({
 
             {!isLoading &&
               budgets?.map((budget) => {
-                const Icon = getCategoryIcon(budget.icon);
+                if (!budget) return null;
+                const Icon = getCategoryIcon(budget.icon ?? "");
                 const isSelected = value === budget.id;
 
                 return (
                   <div
                     key={budget.id}
-                    onClick={() => handleSelect(budget.id)}
+                    onClick={() => handleSelect(budget.id ?? "")}
                     className="flex cursor-pointer items-center justify-between py-3 transition-colors active:bg-muted/50"
                   >
                     <div className="flex items-center gap-3">
@@ -74,7 +75,7 @@ export function BudgetSelectDrawer({
                         className="flex h-10 w-10 items-center justify-center rounded-2xl"
                         style={{
                           backgroundColor: `${budget.color}20`,
-                          color: budget.color,
+                          color: budget.color ?? "#000",
                         }}
                       >
                         <Icon size={20} />

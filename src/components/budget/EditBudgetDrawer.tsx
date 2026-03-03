@@ -28,6 +28,7 @@ interface Budget {
   spent: number;
   icon: string;
   color: string;
+  isActive?: boolean;
 }
 
 interface Props {
@@ -48,7 +49,8 @@ export function EditBudgetDrawer({ open, onOpenChange, budget }: Props) {
   const deleteBudget = api.budget.deleteBudget.useMutation();
 
   const amount = parseInt(amountStr, 10) || 0;
-  const canSubmit = amount > 0 && name.trim().length > 0;
+  const isArchived = budget.isActive === false;
+  const canSubmit = amount > 0 && name.trim().length > 0 && !isArchived;
 
   // Reset form when budget changes or drawer opens
   useEffect(() => {
@@ -66,7 +68,7 @@ export function EditBudgetDrawer({ open, onOpenChange, budget }: Props) {
     try {
       await updateBudget.mutateAsync({
         id: budget.id,
-        amount,
+        amount: amount * 100,
         name: name.trim(),
       });
 
@@ -95,8 +97,8 @@ export function EditBudgetDrawer({ open, onOpenChange, budget }: Props) {
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent className="max-h-[95dvh] px-0 pb-0 pt-0">
           <DrawerHeader className="border-b px-5 pb-3 pt-4 flex items-center justify-between">
-            <DrawerTitle>{step === "amount" ? "Edit Nominal Anggaran" : "Edit Anggaran"}</DrawerTitle>
-            {step === "details" && (
+            <DrawerTitle>{isArchived ? "Detail Anggaran" : (step === "amount" ? "Edit Nominal Anggaran" : "Edit Anggaran")}</DrawerTitle>
+            {step === "details" && !isArchived && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -108,7 +110,7 @@ export function EditBudgetDrawer({ open, onOpenChange, budget }: Props) {
             )}
           </DrawerHeader>
 
-          {step === "amount" ? (
+          {step === "amount" && !isArchived ? (
             <div className="flex flex-1 flex-col">
               <div className="py-6">
                 <AmountInput value={amount} />
@@ -130,7 +132,11 @@ export function EditBudgetDrawer({ open, onOpenChange, budget }: Props) {
             <div className="flex flex-1 flex-col">
               <div className="flex items-center justify-between border-b px-5 py-4">
                 <span className="text-sm font-medium text-muted-foreground">Batas Anggaran</span>
-                <button type="button" onClick={() => setStep("amount")} className="text-lg font-bold text-primary">
+                <button
+                  type="button"
+                  onClick={() => !isArchived && setStep("amount")}
+                  className={`text-lg font-bold ${isArchived ? "text-foreground cursor-default" : "text-primary"}`}
+                >
                   Rp {amount.toLocaleString("id-ID")}
                 </button>
               </div>
@@ -143,19 +149,22 @@ export function EditBudgetDrawer({ open, onOpenChange, budget }: Props) {
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Contoh: Makan Siang"
                     className="h-12 rounded-2xl"
+                    disabled={isArchived}
                   />
                 </div>
               </div>
 
-              <div className="border-t px-5 pb-8 pt-3">
-                <Button
-                  onClick={handleSubmit}
-                  disabled={!canSubmit || updateBudget.isPending}
-                  className="h-12 w-full rounded-full bg-primary font-semibold text-white"
-                >
-                  {updateBudget.isPending ? <Loader2 className="animate-spin" /> : "Simpan Perubahan"}
-                </Button>
-              </div>
+              {!isArchived && (
+                <div className="border-t px-5 pb-8 pt-3">
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={!canSubmit || updateBudget.isPending}
+                    className="h-12 w-full rounded-full bg-primary font-semibold text-white"
+                  >
+                    {updateBudget.isPending ? <Loader2 className="animate-spin" /> : "Simpan Perubahan"}
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </DrawerContent>
