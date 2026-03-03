@@ -53,6 +53,8 @@ export function TransactionActionSheet({ open, onOpenChange, transaction, onEdit
       await utils.transaction.getDashboardSummary.invalidate();
       await utils.wallet.getWallets.invalidate();
       await utils.wallet.getWallet.invalidate();
+      await utils.budget.getBudgets.invalidate();
+      await utils.budget.getBudget.invalidate();
       trackEvent("transaction_deleted");
       setShowDeleteConfirm(false);
       onOpenChange(false);
