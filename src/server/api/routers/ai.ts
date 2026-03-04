@@ -34,8 +34,8 @@ export const aiRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       const groq = new Groq({ apiKey: env.GROQ_API_KEY });
 
-      const prompt = `You are a receipt parser for a personal finance app.
-      Analyze this image of a receipt and extract the transaction details.
+      const systemPrompt = `You are a receipt parser for a personal finance app.
+      Analyze the provided image of a receipt and extract the transaction details.
       Output strict JSON matching this exact schema:
       {
         "success": boolean,
@@ -54,17 +54,16 @@ export const aiRouter = createTRPCRouter({
       Subtotal - Rp 35.000
       Tax (10%) - Rp 3.500
       Discount - -Rp 5.000
-      Total - Rp 33.500
-
-      IMPORTANT: Output ONLY valid JSON, without any markdown formatting, backticks, or explanation.`;
+      Total - Rp 33.500`;
 
       try {
         const result = await groq.chat.completions.create({
           messages: [
+            { role: "system", content: systemPrompt },
             {
               role: "user",
               content: [
-                { type: "text", text: prompt },
+                { type: "text", text: "Please parse this receipt." },
                 {
                   type: "image_url",
                   image_url: {
@@ -74,18 +73,13 @@ export const aiRouter = createTRPCRouter({
               ],
             },
           ],
-          model: "meta-llama/llama-4-scout-17b-16e-instruct",
+          model: "llama-3.2-11b-vision-preview",
           temperature: 0,
+          response_format: { type: "json_object" },
         });
 
         const textResponse = result.choices[0]?.message?.content || "";
-        // Clean up markdown block if the model included it despite our prompt
-        const cleanedText = textResponse
-          .replace(/```json/g, "")
-          .replace(/```/g, "")
-          .trim();
-
-        const parsed = JSON.parse(cleanedText);
+        const parsed = JSON.parse(textResponse);
         return receiptSchema.parse(parsed);
       } catch (error) {
         console.error("Groq API error:", error);
@@ -103,7 +97,7 @@ export const aiRouter = createTRPCRouter({
   parseTransactionText: protectedProcedure
     .input(
       z.object({
-        text: z.string(),
+        text: z.string().max(1000),
         availableWallets: z.array(z.object({ id: z.string(), name: z.string() })),
         availableCategories: z.array(z.object({ id: z.string(), name: z.string() })),
       }),
@@ -111,11 +105,7 @@ export const aiRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       const groq = new Groq({ apiKey: env.GROQ_API_KEY });
 
-      const prompt = `You are an NLP parser for an Indonesian personal finance app.
-      User input: "${input.text}"
-      Available Wallets: ${JSON.stringify(input.availableWallets)}
-      Available Categories: ${JSON.stringify(input.availableCategories)}
-
+      const systemPrompt = `You are an NLP parser for an Indonesian personal finance app.
       Extract the transaction details and map them to the CLOSEST available wallet/category ID.
       Convert spoken numbers like "lima puluh ribu" or "50rb" to standard integer format (e.g., 50000).
       Return strict JSON matching this exact schema:
@@ -129,19 +119,25 @@ export const aiRouter = createTRPCRouter({
         "categoryId": string | null, // MUST match an ID from the available list, or null
         "notes": string | null
       }
-      If the text is completely incomprehensible, set success to false.
-      IMPORTANT: Output ONLY valid JSON, without any markdown formatting, backticks, or explanation.`;
+      If the text is completely incomprehensible, set success to false.`;
+
+      const userPrompt = `User input: "${input.text}"
+      Available Wallets: ${JSON.stringify(input.availableWallets)}
+      Available Categories: ${JSON.stringify(input.availableCategories)}`;
 
       try {
         const result = await groq.chat.completions.create({
-          messages: [{ role: "user", content: prompt }],
-          model: "meta-llama/llama-4-scout-17b-16e-instruct", // Fast Groq model
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+          ],
+          model: "llama-3.1-8b-instant",
           temperature: 0,
+          response_format: { type: "json_object" },
         });
 
         const textResponse = result.choices[0]?.message?.content || "";
-        const cleanedText = textResponse.replace(/```json/g, "").replace(/```/g, "").trim();
-        const parsed = JSON.parse(cleanedText);
+        const parsed = JSON.parse(textResponse);
         return textTransactionSchema.parse(parsed);
       } catch (error) {
         console.error("Groq Text Parse error:", error);
