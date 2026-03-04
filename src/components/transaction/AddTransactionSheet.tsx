@@ -22,10 +22,16 @@ import { api } from "@/trpc/react";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { isDefaultCategoryId } from "@/lib/default-categories";
 import { compressImage } from "@/lib/image";
-import { ArrowDown, ArrowLeft, Loader2, CalendarIcon, Camera } from "lucide-react";
+import { ArrowDown, ArrowLeft, Loader2, CalendarIcon, Camera, ImagePlus } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Popover,
   PopoverContent,
@@ -87,7 +93,8 @@ export function AddTransactionSheet({
     { enabled: open && !!workspaceId },
   );
 
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const cameraInputRef = React.useRef<HTMLInputElement>(null);
+  const galleryInputRef = React.useRef<HTMLInputElement>(null);
   const scanMutation = api.ai.scanReceipt.useMutation();
   const [isScanning, setIsScanning] = useState(false);
 
@@ -124,7 +131,8 @@ export function AddTransactionSheet({
     } finally {
       setIsScanning(false);
       // Reset input so the same file can be selected again
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      if (cameraInputRef.current) cameraInputRef.current.value = "";
+      if (galleryInputRef.current) galleryInputRef.current.value = "";
     }
   };
 
@@ -397,23 +405,49 @@ export function AddTransactionSheet({
                   accept="image/*"
                   capture="environment"
                   className="hidden"
-                  ref={fileInputRef}
+                  ref={cameraInputRef}
                   onChange={handleFileChange}
                 />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-full gap-2 border-primary text-primary hover:bg-primary/10 transition-colors"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isScanning || scanMutation.isPending}
-                >
-                  {isScanning || scanMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Camera className="h-4 w-4" />
-                  )}
-                  Scan Struk
-                </Button>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  ref={galleryInputRef}
+                  onChange={handleFileChange}
+                />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-full gap-2 border-primary text-primary hover:bg-primary/10 transition-colors"
+                      disabled={isScanning || scanMutation.isPending}
+                    >
+                      {isScanning || scanMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Camera className="h-4 w-4" />
+                      )}
+                      Scan / Upload Struk
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="center" className="w-48 rounded-xl">
+                    <DropdownMenuItem
+                      onClick={() => cameraInputRef.current?.click()}
+                      className="gap-2 cursor-pointer py-2.5"
+                    >
+                      <Camera className="h-4 w-4 text-muted-foreground" />
+                      <span>Ambil Foto</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => galleryInputRef.current?.click()}
+                      className="gap-2 cursor-pointer py-2.5"
+                    >
+                      <ImagePlus className="h-4 w-4 text-muted-foreground" />
+                      <span>Pilih dari Galeri</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             )}
 
