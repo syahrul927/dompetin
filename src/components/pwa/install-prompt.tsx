@@ -63,7 +63,7 @@ export function InstallPrompt() {
           setShowPrompt(true);
           trackEvent("pwa_prompt_shown", { platform: "ios" });
         }
-      }, 30000); // Show after 30 seconds
+      }, 5000); // Show after 5 seconds instead of 30
 
       return () => {
         clearTimeout(timer);
