@@ -28,8 +28,11 @@ export function InputMethodDrawer({
   onGalleryClick,
 }: InputMethodDrawerProps) {
   const handleSelect = (method: "manual" | "voice" | "text" | "scan") => {
+    if (method === "scan") {
+      onSelectMethod(method);
+      return; // Keep drawer open to show loading spinner
+    }
     onOpenChange(false);
-    // Slight delay to allow this drawer to close smoothly before opening the next
     setTimeout(() => onSelectMethod(method), 300);
   };
 

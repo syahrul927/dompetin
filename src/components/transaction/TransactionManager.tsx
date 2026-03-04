@@ -20,8 +20,9 @@ export function TransactionManager({
   onOpenChange,
   initialData: externalInitialData,
 }: TransactionManagerProps) {
-  const [addSheetOpen, setAddSheetOpen] = useState(false);
-  const [smartDrawerOpen, setSmartDrawerOpen] = useState(false);
+  type ActiveView = 'input-method' | 'smart' | 'add' | null;
+  const [activeView, setActiveView] = useState<ActiveView>(null);
+
   const [smartMode, setSmartMode] = useState<"text" | "voice">("text");
   const [initialData, setInitialData] = useState<Record<string, unknown> | null>(null);
 
@@ -47,7 +48,7 @@ export function TransactionManager({
       if (result.success) {
         trackEvent("scan_struk_success");
         setInitialData(result);
-        setAddSheetOpen(true);
+        setActiveView("add");
       } else {
         alert(result.notes || "Gagal membaca struk");
       }
@@ -64,10 +65,10 @@ export function TransactionManager({
   const handleSelectMethod = (method: "manual" | "voice" | "text" | "scan") => {
     if (method === "manual") {
       setInitialData(null);
-      setAddSheetOpen(true);
+      setActiveView("add");
     } else if (method === "voice" || method === "text") {
       setSmartMode(method);
-      setSmartDrawerOpen(true);
+      setActiveView("smart");
     } else if (method === "scan") {
       // InputMethodDrawer handles opening the dropdown.
       // The dropdown options trigger the inputs below.
@@ -76,36 +77,38 @@ export function TransactionManager({
 
   const handleSmartInputSuccess = (data: Record<string, unknown>) => {
     setInitialData(data);
-    setSmartDrawerOpen(false);
-    // Add slight delay before opening AddTransactionSheet to avoid animation glitch
-    setTimeout(() => {
-      setAddSheetOpen(true);
-    }, 300);
+    setActiveView("add");
   };
 
-  // If externalInitialData is provided, we bypass the input method selection
-  // and go straight to AddTransactionSheet in edit mode.
+  // State machine lifecycle
   React.useEffect(() => {
-    if (open && externalInitialData) {
-      setInitialData(externalInitialData);
-      setAddSheetOpen(true);
+    if (open) {
+      if (externalInitialData) {
+        setInitialData(externalInitialData);
+        setActiveView("add");
+      } else {
+        setInitialData(null);
+        setActiveView("input-method");
+      }
+    } else {
+      setActiveView(null);
     }
   }, [open, externalInitialData]);
 
-  // When all drawers are closed, we should communicate back that the manager is closed
+  // When a drawer requests to close, we notify the parent and clear view
   const handleManagerClose = () => {
-    if (!addSheetOpen && !smartDrawerOpen) {
-      onOpenChange(false);
-    }
+    setActiveView(null);
+    onOpenChange(false);
   };
 
   return (
     <>
       <InputMethodDrawer
-        open={open && !addSheetOpen && !smartDrawerOpen && !externalInitialData}
+        open={activeView === "input-method"}
         onOpenChange={(isOpen) => {
-          if (!isOpen) handleManagerClose();
-          onOpenChange(isOpen);
+          if (!isOpen && activeView === "input-method") {
+            handleManagerClose();
+          }
         }}
         onSelectMethod={handleSelectMethod}
         isScanning={scanMutation.isPending}
@@ -114,20 +117,22 @@ export function TransactionManager({
       />
 
       <SmartInputDrawer
-        open={smartDrawerOpen}
+        open={activeView === "smart"}
         onOpenChange={(isOpen) => {
-          setSmartDrawerOpen(isOpen);
-          if (!isOpen) handleManagerClose();
+          if (!isOpen && activeView === "smart") {
+            handleManagerClose();
+          }
         }}
         mode={smartMode}
         onSuccess={handleSmartInputSuccess}
       />
 
       <AddTransactionSheet
-        open={addSheetOpen}
+        open={activeView === "add"}
         onOpenChange={(isOpen) => {
-          setAddSheetOpen(isOpen);
-          if (!isOpen) handleManagerClose();
+          if (!isOpen && activeView === "add") {
+            handleManagerClose();
+          }
         }}
         initialData={initialData}
       />
