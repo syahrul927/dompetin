@@ -12,6 +12,17 @@ const receiptSchema = z.object({
   notes: z.string().nullable(),
 });
 
+const textTransactionSchema = z.object({
+  success: z.boolean(),
+  amount: z.number().nullable(),
+  name: z.string().nullable(),
+  date: z.string().nullable(),
+  type: z.enum(["expense", "income", "transfer"]).default("expense"),
+  walletId: z.string().nullable(),
+  categoryId: z.string().nullable(),
+  notes: z.string().nullable(),
+});
+
 export const aiRouter = createTRPCRouter({
   scanReceipt: protectedProcedure
     .input(
@@ -85,6 +96,64 @@ export const aiRouter = createTRPCRouter({
           date: null,
           type: "expense" as const,
           notes: "Failed to scan receipt",
+        };
+      }
+    }),
+
+  parseTransactionText: protectedProcedure
+    .input(
+      z.object({
+        text: z.string(),
+        availableWallets: z.array(z.object({ id: z.string(), name: z.string() })),
+        availableCategories: z.array(z.object({ id: z.string(), name: z.string() })),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const groq = new Groq({ apiKey: env.GROQ_API_KEY });
+
+      const prompt = `You are an NLP parser for an Indonesian personal finance app.
+      User input: "${input.text}"
+      Available Wallets: ${JSON.stringify(input.availableWallets)}
+      Available Categories: ${JSON.stringify(input.availableCategories)}
+
+      Extract the transaction details and map them to the CLOSEST available wallet/category ID.
+      Convert spoken numbers like "lima puluh ribu" or "50rb" to standard integer format (e.g., 50000).
+      Return strict JSON matching this exact schema:
+      {
+        "success": boolean,
+        "amount": number | null,
+        "name": string | null,
+        "date": "YYYY-MM-DD" | null,
+        "type": "expense" | "income" | "transfer",
+        "walletId": string | null, // MUST match an ID from the available list, or null
+        "categoryId": string | null, // MUST match an ID from the available list, or null
+        "notes": string | null
+      }
+      If the text is completely incomprehensible, set success to false.
+      IMPORTANT: Output ONLY valid JSON, without any markdown formatting, backticks, or explanation.`;
+
+      try {
+        const result = await groq.chat.completions.create({
+          messages: [{ role: "user", content: prompt }],
+          model: "meta-llama/llama-4-scout-17b-16e-instruct", // Fast Groq model
+          temperature: 0,
+        });
+
+        const textResponse = result.choices[0]?.message?.content || "";
+        const cleanedText = textResponse.replace(/```json/g, "").replace(/```/g, "").trim();
+        const parsed = JSON.parse(cleanedText);
+        return textTransactionSchema.parse(parsed);
+      } catch (error) {
+        console.error("Groq Text Parse error:", error);
+        return {
+          success: false,
+          amount: null,
+          name: null,
+          date: null,
+          type: "expense" as const,
+          walletId: null,
+          categoryId: null,
+          notes: "Gagal memproses teks.",
         };
       }
     }),
