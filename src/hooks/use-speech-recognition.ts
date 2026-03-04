@@ -42,27 +42,12 @@ export function useSpeechRecognition() {
     recognition.lang = "id-ID"; // Indonesian
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let finalTranscript = "";
-      let interimTranscript = "";
+      // event.results contains all results from the current session
+      const fullTranscript = Array.from(event.results)
+        .map((res) => res?.[0]?.transcript || "")
+        .join("");
 
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        const result = event.results[i];
-        if (result?.isFinal) {
-          finalTranscript += result[0]?.transcript || "";
-        } else {
-          interimTranscript += result?.[0]?.transcript || "";
-        }
-      }
-
-      // Prefer final, but show interim if speaking
-      if (finalTranscript) {
-         setTranscript((prev) => (prev + " " + finalTranscript).trim());
-      } else if (interimTranscript) {
-         const fullTranscript = Array.from(event.results)
-          .map((res) => res?.[0]?.transcript || "")
-          .join("");
-         setTranscript(fullTranscript);
-      }
+      setTranscript(fullTranscript.trim());
     };
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
