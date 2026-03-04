@@ -6,7 +6,7 @@ import { TransactionRow } from "@/components/shared/TransactionRow";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TransactionActionSheet } from "@/components/transaction/TransactionActionSheet";
-import { AddTransactionSheet } from "@/components/transaction/AddTransactionSheet";
+import { TransactionManager } from "@/components/transaction/TransactionManager";
 import { authClient } from "@/server/better-auth/client";
 import { useAnalytics } from "@/hooks/use-analytics";
 
@@ -105,7 +105,7 @@ export function WalletTransactionList({
         onEdit={() => setEditTx(actionTx?.raw ?? null)}
       />
 
-      <AddTransactionSheet
+      <TransactionManager
         open={!!editTx}
         onOpenChange={(open) => !open && setEditTx(null)}
         initialData={editTx}

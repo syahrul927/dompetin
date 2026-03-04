@@ -9,7 +9,7 @@ import { WalletMonthlySummary } from "@/components/wallets/WalletMonthlySummary"
 import { WalletTransactionList } from "@/components/wallets/WalletTransactionList";
 import { EditWalletDrawer } from "@/components/wallets/EditWalletDrawer";
 import { DeleteWalletDialog } from "@/components/wallets/DeleteWalletDialog";
-import { AddTransactionSheet } from "@/components/transaction/AddTransactionSheet";
+import { TransactionManager } from "@/components/transaction/TransactionManager";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/trpc/react";
 import { getWalletContext } from "@/lib/transaction-helpers";
@@ -124,7 +124,7 @@ export default function WalletDetailPage() {
       </div>
 
       {/* Sheets & Dialogs */}
-      <AddTransactionSheet
+      <TransactionManager
         open={showTransactionSheet}
         onOpenChange={setShowTransactionSheet}
       />

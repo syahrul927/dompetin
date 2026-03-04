@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { usePathname } from "next/navigation";
 import { BottomNav } from "./BottomNav";
 import { FAB } from "./FAB";
-import { AddTransactionSheet } from "../transaction/AddTransactionSheet";
+import { TransactionManager } from "../transaction/TransactionManager";
 
 const HIDDEN_ROUTES = ["/login", "/register", "/onboarding"];
 
@@ -50,7 +50,7 @@ export function AppShell({ children }: AppShellProps) {
         )}
       </div>
 
-      <AddTransactionSheet open={isAddOpen} onOpenChange={setIsAddOpen} />
+      <TransactionManager open={isAddOpen} onOpenChange={setIsAddOpen} />
     </div>
   );
 }

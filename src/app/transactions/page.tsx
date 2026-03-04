@@ -11,7 +11,7 @@ import { authClient } from "@/server/better-auth/client";
 import { api } from "@/trpc/react";
 import { Loader2, Calendar } from "lucide-react";
 import { TransactionActionSheet } from "@/components/transaction/TransactionActionSheet";
-import { AddTransactionSheet } from "@/components/transaction/AddTransactionSheet";
+import { TransactionManager } from "@/components/transaction/TransactionManager";
 import { getWalletContext } from "@/lib/transaction-helpers";
 import { useAnalytics } from "@/hooks/use-analytics";
 import {
@@ -315,7 +315,7 @@ export default function TransactionsPage() {
         }
       />
 
-      <AddTransactionSheet
+      <TransactionManager
         open={!!editTx}
         onOpenChange={(open) => !open && setEditTx(null)}
         initialData={editTx}
