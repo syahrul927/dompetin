@@ -54,8 +54,6 @@ export default async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     // Skip Next.js internals and all static files
-    "/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|icons/|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    // Selalu jalankan untuk API routes
-    "/(api|trpc)(.*)",
+    "/((?!_next|api|manifest.json|sw.js|trpc|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
   ],
 };
