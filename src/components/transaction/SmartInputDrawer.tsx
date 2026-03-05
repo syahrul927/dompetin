@@ -39,14 +39,20 @@ export function SmartInputDrawer({ open, onOpenChange, mode, onSuccess }: SmartI
     }
   }, [transcript, mode]);
 
-  // Auto-start listening in voice mode
+  // Auto-start listening in voice mode when opened
   useEffect(() => {
-    if (open && mode === "voice" && isSupported && !isListening) {
-      startListening();
-    } else if (!open && isListening) {
+    if (!isSupported) return;
+
+    if (open && mode === "voice") {
+      // Small timeout to let drawer animation finish before hijacking audio thread
+      const t = setTimeout(() => {
+        startListening();
+      }, 300);
+      return () => clearTimeout(t);
+    } else {
       stopListening();
     }
-  }, [open, mode, isSupported, isListening, startListening, stopListening]);
+  }, [open, mode, isSupported, startListening, stopListening]);
 
   const handleSend = async () => {
     if (!text.trim() || parseMutation.isPending) return;
