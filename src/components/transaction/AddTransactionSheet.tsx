@@ -105,10 +105,10 @@ export function AddTransactionSheet({
         if (txType === "transfer_debit" || txType === "transfer_credit") txType = "transfer";
 
         setType(txType);
-        setAmountStr(Math.abs(Number(initialData.amount)).toString());
-        setName(initialData.name as string);
-        const d = new Date(initialData.date as string);
-        setDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
+        setAmountStr(Math.abs(Number(initialData.amount) || 0).toString());
+        setName((initialData.name as string) || "");
+        const dateStr = initialData.date ? new Date(initialData.date as string) : new Date();
+        setDate(`${dateStr.getFullYear()}-${String(dateStr.getMonth() + 1).padStart(2, "0")}-${String(dateStr.getDate()).padStart(2, "0")}`);
         setNote((initialData.notes as string) || "");
 
         // Handle transfer fee in edit mode
@@ -170,7 +170,7 @@ export function AddTransactionSheet({
 
   const canSubmit =
     amount > 0 &&
-    name.trim().length > 0 &&
+    (name || "").trim().length > 0 &&
     (type === "transfer"
       ? !!fromWalletId && !!toWalletId && fromWalletId !== toWalletId
       : !!walletId);
@@ -225,8 +225,8 @@ export function AddTransactionSheet({
 
         const updateDataPayload = {
           id: initialData.id as string,
-          name: name.trim(),
-          notes: note.trim() || undefined,
+          name: (name || "").trim(),
+          notes: (note || "").trim() || undefined,
           date: dateISO,
           amount: amountInCents,
         };
@@ -265,16 +265,16 @@ export function AddTransactionSheet({
             toWalletId,
             amount: amountInCents,
             feeAmount: feeAmountInCents,
-            name: name.trim(),
-            notes: note.trim() || undefined,
+            name: (name || "").trim(),
+            notes: (note || "").trim() || undefined,
             date: dateISO,
           });
         } else {
           await createTransaction.mutateAsync({
             type,
             amount: amountInCents,
-            name: name.trim(),
-            notes: note.trim() || undefined,
+            name: (name || "").trim(),
+            notes: (note || "").trim() || undefined,
             date: dateISO,
             walletId,
             categoryId: resolvedCategoryId,

@@ -26,6 +26,7 @@ export function useSpeechRecognition() {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
+  const isStartingRef = useRef(false);
 
   useEffect(() => {
     const SpeechRecognition = getSpeechRecognition();
@@ -41,6 +42,12 @@ export function useSpeechRecognition() {
     recognition.interimResults = true;
     recognition.lang = "id-ID"; // Indonesian
 
+    // Handle standard browser DOM event when the mic actually activates
+    recognition.onstart = () => {
+      isStartingRef.current = false;
+      setIsListening(true);
+    };
+
     recognition.onresult = (event: SpeechRecognitionEvent) => {
       // event.results contains all results from the current session
       const fullTranscript = Array.from(event.results)
@@ -52,10 +59,12 @@ export function useSpeechRecognition() {
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       console.error("Speech recognition error", event.error);
+      isStartingRef.current = false;
       setIsListening(false);
     };
 
     recognition.onend = () => {
+      isStartingRef.current = false;
       setIsListening(false);
     };
 
@@ -73,26 +82,39 @@ export function useSpeechRecognition() {
   }, []);
 
   const startListening = useCallback(() => {
-    if (recognitionRef.current && !isListening) {
+    if (recognitionRef.current && !isListening && !isStartingRef.current) {
       setTranscript("");
+      isStartingRef.current = true;
       try {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         recognitionRef.current.start();
-        setIsListening(true);
-      } catch (e) {
-        console.error(e);
+        // We do NOT set isListening=true here, we wait for the onstart event.
+        // This prevents React state race conditions if start() throws synchronously.
+      } catch (e: unknown) {
+        isStartingRef.current = false;
+        // The most common error is DOMException: recognition has already started
+        if (e instanceof Error && e.name === "InvalidStateError") {
+          console.warn("Speech recognition already started, ignoring.");
+          setIsListening(true);
+        } else {
+          console.error(e);
+        }
       }
     }
-  }, [isListening, setTranscript]);
+  }, [isListening]);
 
   const stopListening = useCallback(() => {
-    if (recognitionRef.current && isListening) {
+    if (recognitionRef.current && (isListening || isStartingRef.current)) {
       try {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         recognitionRef.current.stop();
+      } catch (e: unknown) {
+        if (e instanceof Error && e.name !== "InvalidStateError") {
+          console.error(e);
+        }
+      } finally {
+        isStartingRef.current = false;
         setIsListening(false);
-      } catch (e) {
-        console.error(e);
       }
     }
   }, [isListening]);
