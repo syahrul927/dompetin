@@ -2,7 +2,8 @@
 
 import React from "react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { PenLine, Mic, MessageSquare, ScanLine, Camera, ImagePlus, Loader2 } from "lucide-react";
+import { PenLine, Mic, MessageSquare, ScanLine, Camera, ImagePlus, Loader2, Scissors } from "lucide-react";
+import Link from "next/link";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,21 +43,24 @@ export function InputMethodDrawer({
         <DrawerHeader>
           <DrawerTitle className="text-center">Pilih Mode Input</DrawerTitle>
         </DrawerHeader>
-        <div className="grid grid-cols-2 gap-4 p-5 pb-8">
+        <div className="flex flex-col gap-3 px-5 pb-8 pt-4">
           <button
             onClick={() => handleSelect("manual")}
-            className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card p-6 shadow-sm transition-transform active:scale-95"
+            className="flex items-center gap-4 rounded-2xl border p-4 transition-colors active:bg-muted bg-card shadow-sm"
           >
-            <div className="rounded-full bg-primary/10 p-3 text-primary">
-              <PenLine size={24} />
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
+              <PenLine size={24} className="text-primary" />
             </div>
-            <span className="text-sm font-semibold">Manual</span>
+            <div className="flex flex-col items-start">
+              <span className="font-semibold text-sm">Manual</span>
+              <span className="text-xs text-muted-foreground">Input transaksi satu per satu</span>
+            </div>
           </button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card p-6 shadow-sm transition-transform active:scale-95 relative"
+                className="flex items-center gap-4 rounded-2xl border p-4 transition-colors active:bg-muted bg-card shadow-sm relative text-left"
                 disabled={isScanning}
               >
                 {isScanning && (
@@ -64,10 +68,13 @@ export function InputMethodDrawer({
                     <Loader2 className="animate-spin text-primary" size={24} />
                   </div>
                 )}
-                <div className="rounded-full bg-blue-500/10 p-3 text-blue-500">
-                  <ScanLine size={24} />
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-500/10">
+                  <ScanLine size={24} className="text-blue-500" />
                 </div>
-                <span className="text-sm font-semibold">Scan Struk</span>
+                <div className="flex flex-col items-start">
+                  <span className="font-semibold text-sm">Scan Struk</span>
+                  <span className="text-xs text-muted-foreground">Foto struk otomatis jadi transaksi</span>
+                </div>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="center" className="w-48 rounded-xl z-[100]">
@@ -96,23 +103,43 @@ export function InputMethodDrawer({
 
           <button
             onClick={() => handleSelect("voice")}
-            className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card p-6 shadow-sm transition-transform active:scale-95"
+            className="flex items-center gap-4 rounded-2xl border p-4 transition-colors active:bg-muted bg-card shadow-sm"
           >
-            <div className="rounded-full bg-emerald-500/10 p-3 text-emerald-500">
-              <Mic size={24} />
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-500/10">
+              <Mic size={24} className="text-emerald-500" />
             </div>
-            <span className="text-sm font-semibold">Suara</span>
+            <div className="flex flex-col items-start">
+              <span className="font-semibold text-sm">Suara</span>
+              <span className="text-xs text-muted-foreground">Sebutkan transaksi anda</span>
+            </div>
           </button>
 
           <button
             onClick={() => handleSelect("text")}
-            className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card p-6 shadow-sm transition-transform active:scale-95"
+            className="flex items-center gap-4 rounded-2xl border p-4 transition-colors active:bg-muted bg-card shadow-sm"
           >
-            <div className="rounded-full bg-amber-500/10 p-3 text-amber-500">
-              <MessageSquare size={24} />
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-500/10">
+              <MessageSquare size={24} className="text-amber-500" />
             </div>
-            <span className="text-sm font-semibold">Teks Cerdas</span>
+            <div className="flex flex-col items-start">
+              <span className="font-semibold text-sm">Teks Cerdas</span>
+              <span className="text-xs text-muted-foreground">Ketik seperti sedang chat</span>
+            </div>
           </button>
+
+          <Link
+            href="/split-bill/new/items"
+            onClick={() => onOpenChange(false)}
+            className="flex items-center gap-4 rounded-2xl border p-4 transition-colors active:bg-muted bg-card shadow-sm"
+          >
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-indigo-500/10">
+              <Scissors size={24} className="text-indigo-500" />
+            </div>
+            <div className="flex flex-col items-start">
+              <span className="font-semibold text-sm">Split Bill</span>
+              <span className="text-xs text-muted-foreground">Bagi tagihan dengan teman</span>
+            </div>
+          </Link>
         </div>
       </DrawerContent>
     </Drawer>
