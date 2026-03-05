@@ -328,6 +328,47 @@ export const goal = pgTable("dompetin_goal", {
     .notNull(),
 });
 
+// Split Bills
+export const splitBill = pgTable("dompetin_split_bill", {
+  id: uuidColumn("id").primaryKey().defaultRandom(),
+  shareCode: varchar("share_code", { length: 16 }).notNull().unique(),
+  title: varchar("title", { length: 255 }).notNull(),
+  subtotal: numeric("subtotal", { precision: 15, scale: 2 }).notNull(),
+  tax: numeric("tax", { precision: 15, scale: 2 }).notNull().default("0"),
+  discount: numeric("discount", { precision: 15, scale: 2 }).notNull().default("0"),
+  total: numeric("total", { precision: 15, scale: 2 }).notNull(),
+  workspaceId: uuidColumn("workspace_id")
+    .notNull()
+    .references(() => workspace.id, { onDelete: "cascade" }),
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => user.id, { onDelete: "set null" }),
+  transactionId: uuidColumn("transaction_id").references(() => transaction.id, {
+    onDelete: "set null",
+  }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .$defaultFn(() => new Date())
+    .notNull(),
+});
+
+export const splitBillParticipant = pgTable("dompetin_split_bill_participant", {
+  id: uuidColumn("id").primaryKey().defaultRandom(),
+  splitBillId: uuidColumn("split_bill_id")
+    .notNull()
+    .references(() => splitBill.id, { onDelete: "cascade" }),
+  name: varchar("name", { length: 255 }).notNull(),
+  isOwner: boolean("is_owner")
+    .$defaultFn(() => false)
+    .notNull(),
+  items: text("items").notNull(), // JSON string: [{ name, qty, price, subtotal }]
+  taxShare: numeric("tax_share", { precision: 15, scale: 2 }).notNull().default("0"),
+  discountShare: numeric("discount_share", { precision: 15, scale: 2 }).notNull().default("0"),
+  total: numeric("total", { precision: 15, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .$defaultFn(() => new Date())
+    .notNull(),
+});
+
 // ============================================================================
 // RELATIONS
 // ============================================================================
@@ -339,6 +380,7 @@ export const workspaceRelations = relations(workspace, ({ many }) => ({
   budgets: many(budget),
   goals: many(goal),
   invitations: many(invitation),
+  splitBills: many(splitBill),
 }));
 
 export const invitationRelations = relations(invitation, ({ one }) => ({
@@ -422,5 +464,28 @@ export const goalRelations = relations(goal, ({ one }) => ({
   targetWallet: one(wallet, {
     fields: [goal.targetWalletId],
     references: [wallet.id],
+  }),
+}));
+
+export const splitBillRelations = relations(splitBill, ({ one, many }) => ({
+  workspace: one(workspace, {
+    fields: [splitBill.workspaceId],
+    references: [workspace.id],
+  }),
+  createdBy: one(user, {
+    fields: [splitBill.createdBy],
+    references: [user.id],
+  }),
+  transaction: one(transaction, {
+    fields: [splitBill.transactionId],
+    references: [transaction.id],
+  }),
+  participants: many(splitBillParticipant),
+}));
+
+export const splitBillParticipantRelations = relations(splitBillParticipant, ({ one }) => ({
+  splitBill: one(splitBill, {
+    fields: [splitBillParticipant.splitBillId],
+    references: [splitBill.id],
   }),
 }));
