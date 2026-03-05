@@ -9,6 +9,7 @@ import { categoryRouter } from "./routers/category";
 import { budgetRouter } from "./routers/budget";
 import { goalRouter } from "./routers/goal";
 import { aiRouter } from "./routers/ai";
+import { splitBillRouter } from "./routers/split-bill";
 
 /**
  * This is the primary router for your server.
@@ -70,6 +71,11 @@ export const appRouter = createTRPCRouter({
    * AI router
    */
   ai: aiRouter,
+
+  /**
+   * Split bill router
+   */
+  splitBill: splitBillRouter,
 });
 
 // export type definition of API
