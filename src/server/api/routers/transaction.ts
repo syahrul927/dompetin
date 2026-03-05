@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { and, desc, eq, inArray, isNull, sql, gte, lte } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql, gte, lte, lt } from "drizzle-orm";
 import { db } from "@/server/db";
 
 import {
@@ -1105,6 +1105,23 @@ export const transactionRouter = {
           ),
         );
 
+      // Daily totals (today only)
+      const tomorrow = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+      const dailyResult = await db
+        .select({
+          dayIncome: sql<string>`COALESCE(SUM(CASE WHEN ${transaction.type} = 'income' THEN ${transaction.amount} ELSE 0 END), 0)`,
+          dayExpense: sql<string>`COALESCE(SUM(CASE WHEN ${transaction.type} = 'expense' THEN ABS(${transaction.amount}) ELSE 0 END), 0)`,
+        })
+        .from(transaction)
+        .where(
+          and(
+            eq(transaction.workspaceId, input.workspaceId),
+            isNull(transaction.deletedAt),
+            gte(transaction.date, today),
+            lt(transaction.date, tomorrow)
+          ),
+        );
+
       // Daily expense trend for last 7 days
       const sevenDaysAgo = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 6));
 
@@ -1142,10 +1159,13 @@ export const transactionRouter = {
       }
 
       const monthly = monthlyResult[0];
+      const daily = dailyResult[0];
 
       return {
         monthlyIncome: parseFloat(monthly?.monthIncome ?? "0"),
         monthlyExpense: parseFloat(monthly?.monthExpense ?? "0"),
+        dailyIncome: parseFloat(daily?.dayIncome ?? "0"),
+        dailyExpense: parseFloat(daily?.dayExpense ?? "0"),
         trend,
       };
     }),

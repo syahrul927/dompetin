@@ -138,8 +138,8 @@ export default function DashboardPage() {
         />
 
         <SummaryCards
-          monthlyIncome={summary?.monthlyIncome ?? 0}
-          monthlyExpense={summary?.monthlyExpense ?? 0}
+          dailyIncome={summary?.dailyIncome ?? 0}
+          dailyExpense={summary?.dailyExpense ?? 0}
           isLoading={summaryLoading}
         />
 

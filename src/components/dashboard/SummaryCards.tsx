@@ -5,8 +5,8 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface SummaryCardsProps {
-  monthlyIncome: number;
-  monthlyExpense: number;
+  dailyIncome: number;
+  dailyExpense: number;
   isLoading?: boolean;
 }
 
@@ -14,8 +14,8 @@ interface SummaryCardsProps {
  * The 2-column income/expense summary grid below the balance hero.
  */
 export function SummaryCards({
-  monthlyIncome,
-  monthlyExpense,
+  dailyIncome,
+  dailyExpense,
   isLoading,
 }: SummaryCardsProps) {
   if (isLoading) {
@@ -45,7 +45,7 @@ export function SummaryCards({
         <div>
           <p className="text-xs text-muted-foreground">Pemasukan Hari Ini</p>
           <p className="text-[15px] font-bold text-primary">
-            {formatIDR(monthlyIncome)}
+            {formatIDR(dailyIncome)}
           </p>
         </div>
       </Card>
@@ -58,7 +58,7 @@ export function SummaryCards({
         <div>
           <p className="text-xs text-muted-foreground">Pengeluaran Hari Ini</p>
           <p className="text-[15px] font-bold text-foreground">
-            {formatIDR(monthlyExpense)}
+            {formatIDR(dailyExpense)}
           </p>
         </div>
       </Card>
