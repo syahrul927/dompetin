@@ -54,7 +54,7 @@ export default function PreviewPage() {
         };
       });
 
-      const { itemsTotal, taxShare, discountShare, total } =
+      const { taxShare, discountShare, total } =
         getParticipantShare(p, state);
 
       return {

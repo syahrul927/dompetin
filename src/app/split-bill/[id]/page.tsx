@@ -60,7 +60,7 @@ export default function SplitBillResultPage() {
           text: `Bagi tagihan: ${splitBill.title}`,
           url: shareUrl,
         });
-      } catch (error) {
+      } catch {
         // User cancelled or share failed, fall back to clipboard
         handleCopyLink(shareUrl);
       }
@@ -70,7 +70,7 @@ export default function SplitBillResultPage() {
   };
 
   const handleCopyLink = (url: string) => {
-    navigator.clipboard.writeText(url);
+    void navigator.clipboard.writeText(url);
     toast.success("Link berhasil disalin");
   };
 

@@ -66,7 +66,7 @@ export function ParticipantBar({
     }
   };
 
-  const handleDeleteStart = useCallback((e: React.MouseEvent | React.TouchEvent, participantId: string) => {
+  const handleDeleteStart = useCallback((e: React.MouseEvent | React.TouchEvent, _participantId: string) => {
     e.stopPropagation();
 
     // Start long press timer

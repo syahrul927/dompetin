@@ -15,7 +15,7 @@ export default async function PublicSplitBillPage({ params }: PublicSplitBillPag
   let splitBill;
   try {
     splitBill = await api.splitBill.getByCode({ code });
-  } catch (error) {
+  } catch {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="max-w-md w-full text-center">

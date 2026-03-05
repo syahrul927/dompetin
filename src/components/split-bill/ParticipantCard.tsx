@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 import { formatIDR } from "@/lib/formatIDR";
 import type { Participant, BillItem } from "./split-bill-context";
-import { getParticipantShare, type SplitBillState } from "./split-bill-context";
+import { getParticipantShare } from "./split-bill-context";
 
 interface ParticipantCardProps {
   participant: Participant;
@@ -13,7 +13,7 @@ interface ParticipantCardProps {
 }
 
 export function ParticipantCard({ participant, items, tax, discount }: ParticipantCardProps) {
-  const { itemsTotal, taxShare, discountShare, total } = getParticipantShare(
+  const { taxShare, discountShare, total } = getParticipantShare(
     participant,
     { items, tax, discount, participants: [participant] }
   );
