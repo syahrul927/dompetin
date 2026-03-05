@@ -371,13 +371,30 @@ export function AddTransactionSheet({
           <div className="flex flex-col h-[calc(100vh-120px)] sm:h-auto">
             {/* Amount Summary (compact) */}
             <div className="flex items-center justify-between border-b px-5 py-3 shrink-0">
-              <span className="text-sm text-muted-foreground">Jumlah</span>
+              <div className="flex flex-col">
+                <span className="text-sm text-muted-foreground">Jumlah</span>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className={cn(
+                    "text-xs px-2 py-0.5 rounded-full font-medium",
+                    type === "expense" ? "bg-red-500/10 text-red-500" :
+                    type === "income" ? "bg-emerald-500/10 text-emerald-500" :
+                    "bg-blue-500/10 text-blue-500"
+                  )}>
+                    {type === "expense" ? "Pengeluaran" : type === "income" ? "Pemasukan" : "Transfer"}
+                  </span>
+                </div>
+              </div>
               <button
                 type="button"
                 onClick={() => setStep("amount")}
-                className="text-lg font-bold text-foreground"
+                className={cn(
+                  "text-xl font-bold tracking-tight",
+                  type === "expense" ? "text-red-500" :
+                  type === "income" ? "text-emerald-500" :
+                  "text-blue-500"
+                )}
               >
-                Rp {amount.toLocaleString("id-ID")}
+                {type === "expense" ? "- " : type === "income" ? "+ " : ""}Rp {amount.toLocaleString("id-ID")}
               </button>
             </div>
 
