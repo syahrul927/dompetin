@@ -76,7 +76,14 @@ export function TransactionManager({
   };
 
   const handleSmartInputSuccess = (data: Record<string, unknown>) => {
-    setInitialData(data);
+    // Map the flat data from AI endpoint to the nested format AddTransactionSheet expects
+    const mappedData = {
+      ...data,
+      wallet: data.walletId ? { id: data.walletId } : null,
+      category: data.categoryId ? { id: data.categoryId } : null,
+    };
+
+    setInitialData(mappedData);
     setActiveView("add");
   };
 

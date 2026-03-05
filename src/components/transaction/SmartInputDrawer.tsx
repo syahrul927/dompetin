@@ -26,9 +26,9 @@ export function SmartInputDrawer({ open, onOpenChange, mode, onSuccess }: SmartI
   const [text, setText] = useState("");
   const { isListening, transcript, isSupported, startListening, stopListening } = useSpeechRecognition();
 
-  // Queries to get IDs
+  // Queries to get IDs - Fetching ALL categories so AI can map income and expense
   const { data: wallets } = api.wallet.getWallets.useQuery({ workspaceId }, { enabled: open && !!workspaceId });
-  const { data: categories } = api.category.getCategories.useQuery({ workspaceId, type: "expense" }, { enabled: open && !!workspaceId });
+  const { data: categories } = api.category.getCategories.useQuery({ workspaceId }, { enabled: open && !!workspaceId });
 
   const parseMutation = api.ai.parseTransactionText.useMutation();
 
