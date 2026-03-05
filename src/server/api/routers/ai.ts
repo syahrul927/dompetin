@@ -23,6 +23,21 @@ const textTransactionSchema = z.object({
   notes: z.string().nullable(),
 });
 
+const receiptItemsSchema = z.object({
+  success: z.boolean(),
+  items: z
+    .array(
+      z.object({
+        name: z.string(),
+        qty: z.number(),
+        price: z.number(),
+      }),
+    )
+    .nullable(),
+  tax: z.number().nullable(),
+  discount: z.number().nullable(),
+});
+
 export const aiRouter = createTRPCRouter({
   scanReceipt: protectedProcedure
     .input(
@@ -150,6 +165,69 @@ export const aiRouter = createTRPCRouter({
           walletId: null,
           categoryId: null,
           notes: "Gagal memproses teks.",
+        };
+      }
+    }),
+
+  scanReceiptItems: protectedProcedure
+    .input(
+      z.object({
+        imageBase64: z.string(),
+        mimeType: z.string(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const groq = new Groq({ apiKey: env.GROQ_API_KEY });
+
+      const systemPrompt = `You are a receipt parser for a personal finance app.
+    Analyze the provided image of a receipt and extract INDIVIDUAL LINE ITEMS.
+    Output strict JSON matching this exact schema:
+    {
+      "success": boolean,
+      "items": [{ "name": string, "qty": number, "price": number }] | null,
+      "tax": number | null,
+      "discount": number | null
+    }
+
+    Rules:
+    - "price" is the price PER UNIT (not total for qty), in whole IDR (no decimals)
+    - "qty" is the quantity of each item (default 1 if not specified)
+    - "tax" is the total tax/service charge amount in whole IDR, or null if none
+    - "discount" is the total discount amount as a POSITIVE number in whole IDR, or null if none
+    - If it is not a readable receipt, set success to false and items to null`;
+
+      try {
+        const result = await groq.chat.completions.create({
+          messages: [
+            { role: "system", content: systemPrompt },
+            {
+              role: "user",
+              content: [
+                { type: "text", text: "Please parse this receipt into individual items." },
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: `data:${input.mimeType};base64,${input.imageBase64}`,
+                  },
+                },
+              ],
+            },
+          ],
+          model: "llama-3.2-11b-vision-preview",
+          temperature: 0,
+          response_format: { type: "json_object" },
+        });
+
+        const textResponse = result.choices[0]?.message?.content || "";
+        const parsed = JSON.parse(textResponse);
+        return receiptItemsSchema.parse(parsed);
+      } catch (error) {
+        console.error("Groq Receipt Items error:", error);
+        return {
+          success: false,
+          items: null,
+          tax: null,
+          discount: null,
         };
       }
     }),
