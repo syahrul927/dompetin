@@ -212,7 +212,7 @@ export function AddTransactionSheet({
     const dateISO = new Date(date + "T00:00:00Z").toISOString();
 
     try {
-      if (initialData) {
+      if (initialData && initialData.id) {
         // Edit mode
         let resolvedCategoryId = categoryId || undefined;
         if (categoryId && isDefaultCategoryId(categoryId)) {
@@ -292,7 +292,7 @@ export function AddTransactionSheet({
         utils.budget.getBudget.invalidate(),
       ]);
 
-      trackEvent(initialData ? "transaction_updated" : "transaction_added", {
+      trackEvent(initialData?.id ? "transaction_updated" : "transaction_added", {
         type,
       });
 
