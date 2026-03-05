@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Plus } from "lucide-react";
 import { useSplitBill } from "@/components/split-bill/split-bill-context";
 import { cn } from "@/lib/utils";
@@ -13,7 +13,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +22,8 @@ interface ParticipantBarProps {
   onSetActive: (id: string | null) => void;
 }
 
+const LONG_PRESS_DURATION = 500; // ms
+
 export function ParticipantBar({
   activeParticipantId,
   onSetActive,
@@ -30,6 +31,8 @@ export function ParticipantBar({
   const { state, dispatch } = useSplitBill();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleAddParticipant = () => {
     dispatch({ type: "ADD_PARTICIPANT" });
@@ -62,6 +65,42 @@ export function ParticipantBar({
       onSetActive(activeParticipantId === participantId ? null : participantId);
     }
   };
+
+  const handleDeleteStart = useCallback((e: React.MouseEvent | React.TouchEvent, participantId: string) => {
+    e.stopPropagation();
+
+    // Start long press timer
+    longPressTimerRef.current = setTimeout(() => {
+      setDeleteDialogOpen(true);
+      longPressTimerRef.current = null;
+    }, LONG_PRESS_DURATION);
+  }, []);
+
+  const handleDeleteEnd = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
+
+    // Clear timer if still running (wasn't a long press)
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
+
+  const handleDeleteConfirm = useCallback((participantId: string) => {
+    dispatch({
+      type: "REMOVE_PARTICIPANT",
+      id: participantId,
+    });
+    if (activeParticipantId === participantId) {
+      onSetActive(null);
+    }
+    setDeleteDialogOpen(false);
+  }, [dispatch, activeParticipantId, onSetActive]);
+
+  const handleDeleteCancel = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
+    setDeleteDialogOpen(false);
+  }, []);
 
   return (
     <div className="flex items-center gap-3 overflow-x-auto pb-2">
@@ -136,49 +175,49 @@ export function ParticipantBar({
             </button>
           )}
 
-          {/* Delete button for non-owner participants */}
+          {/* Delete button for non-owner participants - long press */}
           {!participant.isOwner && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <button
-                  onClick={(e) => e.stopPropagation()}
-                  className="text-[10px] text-destructive hover:text-destructive/80"
-                  aria-label="Hapus peserta"
-                >
-                  Hapus
-                </button>
-              </AlertDialogTrigger>
-              <AlertDialogContent size="sm">
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Hapus Peserta?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Anda yakin ingin menghapus peserta{" "}
-                    <strong>{participant.name}</strong>? Semua pembagian item
-                    untuk peserta ini akan dihapus.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
-                    Batal
-                  </AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      dispatch({
-                        type: "REMOVE_PARTICIPANT",
-                        id: participant.id,
-                      });
-                      if (activeParticipantId === participant.id) {
-                        onSetActive(null);
-                      }
-                    }}
-                    variant="destructive"
-                  >
-                    Hapus
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <>
+              <button
+                onMouseDown={(e) => handleDeleteStart(e, participant.id)}
+                onMouseUp={handleDeleteEnd}
+                onMouseLeave={handleDeleteEnd}
+                onTouchStart={(e) => handleDeleteStart(e, participant.id)}
+                onTouchEnd={handleDeleteEnd}
+                onTouchCancel={handleDeleteEnd}
+                className="text-[10px] text-destructive hover:text-destructive/80 select-none"
+                aria-label="Tekan lama untuk hapus peserta"
+              >
+                Hapus
+              </button>
+
+              {/* Delete confirmation dialog */}
+              {deleteDialogOpen && (
+                <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                  <AlertDialogContent size="sm">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Hapus Peserta?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Anda yakin ingin menghapus peserta{" "}
+                        <strong>{participant.name}</strong>? Semua pembagian item
+                        untuk peserta ini akan dihapus.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel onClick={handleDeleteCancel}>
+                        Batal
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => handleDeleteConfirm(participant.id)}
+                        variant="destructive"
+                      >
+                        Hapus
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </>
           )}
         </div>
       ))}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSplitBill, hasUnassignedItems, getParticipantShare } from "@/components/split-bill/split-bill-context";
 import { ParticipantBar } from "@/components/split-bill/ParticipantBar";
 import { SplitItemRow } from "@/components/split-bill/SplitItemRow";
@@ -9,6 +10,7 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function SplitPage() {
+  const router = useRouter();
   const { state, dispatch } = useSplitBill();
   const [activeParticipantId, setActiveParticipantId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -20,9 +22,9 @@ export default function SplitPage() {
   // Redirect to items page if no items
   useEffect(() => {
     if (mounted && state.items.length === 0) {
-      window.location.href = "/split-bill/new/items";
+      router.push("/split-bill/new/items");
     }
-  }, [mounted, state.items.length]);
+  }, [mounted, state.items.length, router]);
 
   const handleSetAssignment = (participantId: string, itemId: string, qty: number) => {
     dispatch({ type: "SET_ASSIGNMENT", participantId, itemId, qty });

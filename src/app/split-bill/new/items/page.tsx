@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { nanoid } from "nanoid";
 import { ArrowLeft, Sparkles, Plus, Camera, Image as Gallery } from "lucide-react";
 import { useSplitBill, getGrandSubtotal, getFinalTotal } from "@/components/split-bill/split-bill-context";
 import { BillItemRow } from "@/components/split-bill/BillItemRow";
@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export default function ItemsPage() {
-  const router = useRouter();
   const { state, dispatch } = useSplitBill();
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -30,7 +29,7 @@ export default function ItemsPage() {
       if (result.success && result.items) {
         dispatch({
           type: "SET_ITEMS_FROM_SCAN",
-          items: result.items.map(item => ({ ...item, id: crypto.randomUUID() })),
+          items: result.items.map(item => ({ ...item, id: nanoid() })),
           tax: result.tax ?? 0,
           discount: result.discount ?? 0,
         });
