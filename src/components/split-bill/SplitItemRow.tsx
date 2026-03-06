@@ -55,12 +55,17 @@ export function SplitItemRow({
       )}
     >
       <div className="flex items-center gap-3">
-        {/* Left indicator */}
-        {isHighlighted && (
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-            <Check className="h-4 w-4" />
-          </div>
-        )}
+        {/* Left indicator - always reserve space to prevent layout shift */}
+        <div
+          className={cn(
+            "flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all",
+            isHighlighted
+              ? "scale-100 bg-primary text-primary-foreground opacity-100"
+              : "scale-95 opacity-0",
+          )}
+        >
+          <Check className="h-4 w-4" />
+        </div>
 
         {/* Item details */}
         <div className="flex-1 space-y-1">
