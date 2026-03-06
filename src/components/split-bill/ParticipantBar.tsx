@@ -31,7 +31,7 @@ export function ParticipantBar({
   const { state, dispatch } = useSplitBill();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [participantToDelete, setParticipantToDelete] = useState<string | null>(null);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleAddParticipant = () => {
@@ -66,12 +66,12 @@ export function ParticipantBar({
     }
   };
 
-  const handleDeleteStart = useCallback((e: React.MouseEvent | React.TouchEvent, _participantId: string) => {
+  const handleDeleteStart = useCallback((e: React.MouseEvent | React.TouchEvent, participantId: string) => {
     e.stopPropagation();
 
     // Start long press timer
     longPressTimerRef.current = setTimeout(() => {
-      setDeleteDialogOpen(true);
+      setParticipantToDelete(participantId);
       longPressTimerRef.current = null;
     }, LONG_PRESS_DURATION);
   }, []);
@@ -94,12 +94,12 @@ export function ParticipantBar({
     if (activeParticipantId === participantId) {
       onSetActive(null);
     }
-    setDeleteDialogOpen(false);
+    setParticipantToDelete(null);
   }, [dispatch, activeParticipantId, onSetActive]);
 
   const handleDeleteCancel = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.stopPropagation();
-    setDeleteDialogOpen(false);
+    setParticipantToDelete(null);
   }, []);
 
   return (
@@ -190,39 +190,46 @@ export function ParticipantBar({
               >
                 Hapus
               </button>
-
-              {/* Delete confirmation dialog */}
-              {deleteDialogOpen && (
-                <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                  <AlertDialogContent size="sm">
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Hapus Peserta?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Anda yakin ingin menghapus peserta{" "}
-                        <strong>{participant.name}</strong>? Semua pembagian item
-                        untuk peserta ini akan dihapus.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel onClick={handleDeleteCancel}>
-                        Batal
-                      </AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => handleDeleteConfirm(participant.id)}
-                        variant="destructive"
-                      >
-                        Hapus
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
             </>
           ) : (
-            <div className="h-[15px]" aria-hidden="true" />
+            <div className="text-[10px] invisible select-none" aria-hidden="true">(Tahan Hapus)</div>
           )}
         </div>
       ))}
+
+      {/* Delete confirmation dialog moved outside the map loop */}
+      <AlertDialog
+        open={participantToDelete !== null}
+        onOpenChange={(open) => !open && setParticipantToDelete(null)}
+      >
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Peserta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Anda yakin ingin menghapus peserta{" "}
+              <strong>
+                {state.participants.find((p) => p.id === participantToDelete)?.name}
+              </strong>
+              ? Semua pembagian item untuk peserta ini akan dihapus.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleDeleteCancel}>
+              Batal
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (participantToDelete) {
+                  handleDeleteConfirm(participantToDelete);
+                }
+              }}
+              variant="destructive"
+            >
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
