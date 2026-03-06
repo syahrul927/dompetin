@@ -164,17 +164,28 @@ export function getParticipantShare(
   participant: Participant,
   state: SplitBillState,
 ): { itemsTotal: number; taxShare: number; discountShare: number; total: number } {
-  const grandSubtotal = getGrandSubtotal(state.items);
-
   let itemsTotal = 0;
-  for (const assignment of participant.assignments) {
-    const item = state.items.find((i) => i.id === assignment.itemId);
-    if (item) {
-      itemsTotal += assignment.qty * item.price;
-    }
-  }
 
-  const proportion = grandSubtotal > 0 ? itemsTotal / grandSubtotal : 0;
+  participant.assignments.forEach((assignment) => {
+    const item = state.items.find((i) => i.id === assignment.itemId);
+    if (!item) return;
+
+    // Calculate total shares for this item across ALL participants
+    const totalShares = state.participants.reduce((sum, p) => {
+      const pAssignment = p.assignments.find((a) => a.itemId === item.id);
+      return sum + (pAssignment?.qty || 0);
+    }, 0);
+
+    if (totalShares > 0) {
+      const itemTotalPrice = item.qty * item.price;
+      const pricePerShare = itemTotalPrice / totalShares;
+      itemsTotal += assignment.qty * pricePerShare;
+    }
+  });
+
+  const subtotal = getGrandSubtotal(state.items);
+  const proportion = subtotal > 0 ? itemsTotal / subtotal : 0;
+
   const taxShare = Math.round(state.tax * proportion);
   const discountShare = Math.round(state.discount * proportion);
   const total = itemsTotal + taxShare - discountShare;
