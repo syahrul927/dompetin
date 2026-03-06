@@ -7,7 +7,17 @@ import "./src/env.js";
 import withPWA from "next-pwa";
 
 /** @type {import("next").NextConfig} */
-const config = {};
+const config = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "api.dicebear.com",
+        pathname: "/7.x/**",
+      },
+    ],
+  },
+};
 
 const pwaConfig = withPWA({
   dest: "public",

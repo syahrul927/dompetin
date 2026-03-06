@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useSplitBill, type BillItem } from "@/components/split-bill/split-bill-context";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -81,10 +82,16 @@ export function SplitItemRow({
             assignedParticipants.map((p) => (
               <div
                 key={p.id}
-                className="inline-block h-6 w-6 rounded-full ring-2 ring-background bg-muted flex items-center justify-center text-[10px] font-medium"
+                className="relative inline-block h-6 w-6 rounded-full ring-2 ring-background bg-muted overflow-hidden border border-border"
                 title={p.name}
               >
-                {p.name.charAt(0).toUpperCase()}
+                <Image
+                  src={`https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(p.name)}`}
+                  alt={p.name}
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
               </div>
             ))
           ) : (
