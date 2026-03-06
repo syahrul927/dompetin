@@ -175,8 +175,8 @@ export function ParticipantBar({
             </button>
           )}
 
-          {/* Delete button for non-owner participants - long press */}
-          {!participant.isOwner && (
+          {/* Delete button or placeholder for symmetry */}
+          {!participant.isOwner ? (
             <>
               <button
                 onMouseDown={(e) => handleDeleteStart(e, participant.id)}
@@ -218,6 +218,8 @@ export function ParticipantBar({
                 </AlertDialog>
               )}
             </>
+          ) : (
+            <div className="h-[15px]" aria-hidden="true" />
           )}
         </div>
       ))}
