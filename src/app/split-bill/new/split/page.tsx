@@ -128,13 +128,11 @@ export default function SplitPage() {
       <footer className="sticky bottom-0 border-t bg-background p-4">
         <Link href={unassignedItems ? "#" : "/split-bill/new/preview"}>
           <Button
-            className="w-full"
+            className="w-full text-base py-6"
             disabled={unassignedItems}
             style={{ pointerEvents: unassignedItems ? "none" : "auto" }}
           >
-            {unassignedItems
-              ? "Selesaikan pembagian semua item"
-              : "Lanjut ke Preview"}
+            Lanjut
           </Button>
         </Link>
       </footer>

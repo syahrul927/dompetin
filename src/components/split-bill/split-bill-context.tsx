@@ -194,18 +194,15 @@ export function getParticipantShare(
   return { itemsTotal: roundedItemsTotal, taxShare, discountShare, total };
 }
 
-export function getRemainingQty(itemId: string, state: SplitBillState): number {
-  const item = state.items.find((i) => i.id === itemId);
-  if (!item) return 0;
-  const assigned = state.participants.reduce((sum, p) => {
-    const a = p.assignments.find((a) => a.itemId === itemId);
-    return sum + (a?.qty ?? 0);
-  }, 0);
-  return item.qty - assigned;
-}
-
 export function hasUnassignedItems(state: SplitBillState): boolean {
-  return state.items.some((item) => getRemainingQty(item.id, state) > 0);
+  // An item is unassigned if NO participant has placed any shares on it.
+  return state.items.some((item) => {
+    const totalShares = state.participants.reduce((sum, p) => {
+      const a = p.assignments.find((a) => a.itemId === item.id);
+      return sum + (a?.qty ?? 0);
+    }, 0);
+    return totalShares === 0;
+  });
 }
 
 // Context
