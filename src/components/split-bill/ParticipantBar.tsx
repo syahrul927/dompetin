@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Plus } from "lucide-react";
 import { useSplitBill } from "@/components/split-bill/split-bill-context";
 import { cn, getAvatarUrl } from "@/lib/utils";
@@ -22,8 +22,6 @@ interface ParticipantBarProps {
   onSetActive: (id: string | null) => void;
 }
 
-const LONG_PRESS_DURATION = 500; // ms
-
 export function ParticipantBar({
   activeParticipantId,
   onSetActive,
@@ -32,7 +30,6 @@ export function ParticipantBar({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
   const [participantToDelete, setParticipantToDelete] = useState<string | null>(null);
-  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleAddParticipant = () => {
     dispatch({ type: "ADD_PARTICIPANT" });
@@ -66,25 +63,10 @@ export function ParticipantBar({
     }
   };
 
-  const handleDeleteStart = useCallback((e: React.MouseEvent | React.TouchEvent, participantId: string) => {
+  const handleDeleteClick = (e: React.MouseEvent, participantId: string) => {
     e.stopPropagation();
-
-    // Start long press timer
-    longPressTimerRef.current = setTimeout(() => {
-      setParticipantToDelete(participantId);
-      longPressTimerRef.current = null;
-    }, LONG_PRESS_DURATION);
-  }, []);
-
-  const handleDeleteEnd = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    e.stopPropagation();
-
-    // Clear timer if still running (wasn't a long press)
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
-    }
-  }, []);
+    setParticipantToDelete(participantId);
+  };
 
   const handleDeleteConfirm = useCallback((participantId: string) => {
     dispatch({
@@ -185,22 +167,17 @@ export function ParticipantBar({
 
           {/* Delete button or placeholder for symmetry */}
           {!participant.isOwner ? (
-            <>
-              <button
-                onMouseDown={(e) => handleDeleteStart(e, participant.id)}
-                onMouseUp={handleDeleteEnd}
-                onMouseLeave={handleDeleteEnd}
-                onTouchStart={(e) => handleDeleteStart(e, participant.id)}
-                onTouchEnd={handleDeleteEnd}
-                onTouchCancel={handleDeleteEnd}
-                className="text-[10px] text-destructive hover:text-destructive/80 select-none"
-                aria-label="Tekan lama untuk hapus peserta"
-              >
-                Hapus
-              </button>
-            </>
+            <button
+              onClick={(e) => handleDeleteClick(e, participant.id)}
+              className="text-[10px] text-destructive hover:text-destructive/80 select-none px-2 py-1"
+              aria-label="Hapus peserta"
+            >
+              Hapus
+            </button>
           ) : (
-            <div className="text-[10px] invisible select-none" aria-hidden="true">Hapus</div>
+            <div className="text-[10px] invisible select-none px-2 py-1" aria-hidden="true">
+              Hapus
+            </div>
           )}
         </div>
       ))}
