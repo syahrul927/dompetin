@@ -44,23 +44,13 @@ export default function PreviewPage() {
     const subtotal = getGrandSubtotal(state.items);
 
     const participants = state.participants.map((p) => {
-      const items = p.assignments.map((a) => {
-        const item = state.items.find((i) => i.id === a.itemId);
-        return {
-          name: item?.name || "",
-          qty: a.qty,
-          price: item?.price || 0,
-          subtotal: (item?.price || 0) * a.qty,
-        };
-      });
-
-      const { taxShare, discountShare, total } =
+      const { taxShare, discountShare, total, itemsBreakdown } =
         getParticipantShare(p, state);
 
       return {
         name: p.name,
         isOwner: p.isOwner,
-        items,
+        items: itemsBreakdown,
         taxShare,
         discountShare,
         total,
@@ -104,9 +94,7 @@ export default function PreviewPage() {
             <ParticipantCard
               key={participant.id}
               participant={participant}
-              items={state.items}
-              tax={state.tax}
-              discount={state.discount}
+              state={state}
             />
           ))}
         </div>

@@ -160,11 +160,20 @@ export function getFinalTotal(state: SplitBillState): number {
   return getGrandSubtotal(state.items) + state.tax - state.discount;
 }
 
+export interface ItemBreakdown {
+  itemId: string;
+  name: string;
+  qty: number;
+  price: number;
+  subtotal: number;
+}
+
 export function getParticipantShare(
   participant: Participant,
   state: SplitBillState,
-): { itemsTotal: number; taxShare: number; discountShare: number; total: number } {
+): { itemsTotal: number; taxShare: number; discountShare: number; total: number; itemsBreakdown: ItemBreakdown[] } {
   let itemsTotal = 0;
+  const itemsBreakdown: ItemBreakdown[] = [];
 
   participant.assignments.forEach((assignment) => {
     const item = state.items.find((i) => i.id === assignment.itemId);
@@ -179,7 +188,17 @@ export function getParticipantShare(
     if (totalShares > 0) {
       const itemTotalPrice = item.qty * item.price;
       const pricePerShare = itemTotalPrice / totalShares;
-      itemsTotal += assignment.qty * pricePerShare;
+      const subtotal = assignment.qty * pricePerShare;
+
+      itemsTotal += subtotal;
+
+      itemsBreakdown.push({
+        itemId: item.id,
+        name: item.name,
+        qty: assignment.qty,
+        price: Math.round(pricePerShare),
+        subtotal: Math.round(subtotal),
+      });
     }
   });
 
@@ -191,7 +210,7 @@ export function getParticipantShare(
   const roundedItemsTotal = Math.round(itemsTotal);
   const total = roundedItemsTotal + taxShare - discountShare;
 
-  return { itemsTotal: roundedItemsTotal, taxShare, discountShare, total };
+  return { itemsTotal: roundedItemsTotal, taxShare, discountShare, total, itemsBreakdown };
 }
 
 export function hasUnassignedItems(state: SplitBillState): boolean {

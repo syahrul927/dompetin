@@ -2,32 +2,27 @@
 
 import { cn } from "@/lib/utils";
 import { formatIDR } from "@/lib/formatIDR";
-import type { Participant, BillItem } from "./split-bill-context";
+import type { Participant, SplitBillState } from "./split-bill-context";
 import { getParticipantShare } from "./split-bill-context";
 
 interface ParticipantCardProps {
   participant: Participant;
-  items: BillItem[];
-  tax: number;
-  discount: number;
+  state: SplitBillState;
 }
 
-export function ParticipantCard({ participant, items, tax, discount }: ParticipantCardProps) {
-  const { taxShare, discountShare, total } = getParticipantShare(
+export function ParticipantCard({ participant, state }: ParticipantCardProps) {
+  const { taxShare, discountShare, total, itemsBreakdown } = getParticipantShare(
     participant,
-    { items, tax, discount, participants: [participant] }
+    state // Use the full state
   );
 
-  const assignedItems = participant.assignments.map((assignment) => {
-    const item = items.find((i) => i.id === assignment.itemId);
-    if (!item) return null;
-    const subtotal = assignment.qty * item.price;
+  const assignedItems = itemsBreakdown.map((item) => {
     return (
-      <div key={assignment.itemId} className="flex justify-between text-sm">
+      <div key={item.itemId} className="flex justify-between text-sm">
         <span>
-          {item.name} {assignment.qty > 1 ? `${assignment.qty}x` : ""}
+          {item.name || "Item tanpa nama"} {item.qty > 1 ? `${item.qty}x` : ""}
         </span>
-        <span className="font-medium">{formatIDR(subtotal)}</span>
+        <span className="font-medium">{formatIDR(item.subtotal)}</span>
       </div>
     );
   });
