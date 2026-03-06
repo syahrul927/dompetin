@@ -3,7 +3,6 @@
 import { useSplitBill, type BillItem } from "@/components/split-bill/split-bill-context";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
 
 interface SplitItemRowProps {
   item: BillItem;
@@ -50,23 +49,11 @@ export function SplitItemRow({
   return (
     <div
       className={cn(
-        "flex flex-col gap-2 rounded-lg border p-3 transition-colors",
-        isHighlighted && "border-l-4 border-l-primary bg-primary/5",
+        "flex flex-col gap-3 rounded-lg border p-3 transition-all duration-200",
+        isHighlighted ? "ring-2 ring-primary bg-primary/5 border-transparent" : "bg-card"
       )}
     >
       <div className="flex items-center gap-3">
-        {/* Left indicator - always reserve space to prevent layout shift */}
-        <div
-          className={cn(
-            "flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all",
-            isHighlighted
-              ? "scale-100 bg-primary text-primary-foreground opacity-100"
-              : "scale-95 opacity-0",
-          )}
-        >
-          <Check className="h-4 w-4" />
-        </div>
-
         {/* Item details */}
         <div className="flex-1 space-y-1">
           <div className="flex items-center justify-between gap-2">
