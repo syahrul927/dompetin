@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import Image from "next/image";
 import { Plus } from "lucide-react";
 import { useSplitBill } from "@/components/split-bill/split-bill-context";
-import { cn } from "@/lib/utils";
+import { cn, getAvatarUrl } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -136,12 +135,10 @@ export function ParticipantBar({
             )}
           >
             <div className="relative size-full overflow-hidden rounded-full bg-muted">
-              <Image
-                src={`https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(participant.name)}`}
+              <img
+                src={getAvatarUrl(participant.name)}
                 alt={participant.name}
-                fill
-                className="object-cover"
-                unoptimized
+                className="h-full w-full object-cover"
               />
             </div>
 

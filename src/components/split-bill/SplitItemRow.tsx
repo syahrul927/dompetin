@@ -1,8 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { useSplitBill, type BillItem } from "@/components/split-bill/split-bill-context";
-import { cn } from "@/lib/utils";
+import { cn, getAvatarUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 interface SplitItemRowProps {
@@ -85,12 +84,10 @@ export function SplitItemRow({
                 className="relative inline-block h-6 w-6 rounded-full ring-2 ring-background bg-muted overflow-hidden border border-border"
                 title={p.name}
               >
-                <Image
-                  src={`https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(p.name)}`}
+                <img
+                  src={getAvatarUrl(p.name)}
                   alt={p.name}
-                  fill
-                  className="object-cover"
-                  unoptimized
+                  className="h-full w-full object-cover"
                 />
               </div>
             ))
