@@ -117,6 +117,7 @@ export function ParticipantBar({
             )}
           >
             <div className="relative size-full overflow-hidden rounded-full bg-muted">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={getAvatarUrl(participant.name)}
                 alt={participant.name}

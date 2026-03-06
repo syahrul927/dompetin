@@ -84,6 +84,7 @@ export function SplitItemRow({
                 className="relative inline-block h-6 w-6 rounded-full ring-2 ring-background bg-muted overflow-hidden border border-border"
                 title={p.name}
               >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={getAvatarUrl(p.name)}
                   alt={p.name}
