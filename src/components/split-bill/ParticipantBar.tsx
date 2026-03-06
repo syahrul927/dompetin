@@ -102,6 +102,10 @@ export function ParticipantBar({
     setParticipantToDelete(null);
   }, []);
 
+  const participantToDeleteName = state.participants.find(
+    (p) => p.id === participantToDelete
+  )?.name;
+
   return (
     <div className="flex items-center gap-3 overflow-x-auto pb-2">
       {/* Add participant button */}
@@ -192,7 +196,7 @@ export function ParticipantBar({
               </button>
             </>
           ) : (
-            <div className="text-[10px] invisible select-none" aria-hidden="true">(Tahan Hapus)</div>
+            <div className="text-[10px] invisible select-none" aria-hidden="true">Hapus</div>
           )}
         </div>
       ))}
@@ -207,9 +211,7 @@ export function ParticipantBar({
             <AlertDialogTitle>Hapus Peserta?</AlertDialogTitle>
             <AlertDialogDescription>
               Anda yakin ingin menghapus peserta{" "}
-              <strong>
-                {state.participants.find((p) => p.id === participantToDelete)?.name}
-              </strong>
+              <strong>{participantToDeleteName}</strong>
               ? Semua pembagian item untuk peserta ini akan dihapus.
             </AlertDialogDescription>
           </AlertDialogHeader>
