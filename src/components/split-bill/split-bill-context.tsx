@@ -188,9 +188,10 @@ export function getParticipantShare(
 
   const taxShare = Math.round(state.tax * proportion);
   const discountShare = Math.round(state.discount * proportion);
-  const total = itemsTotal + taxShare - discountShare;
+  const roundedItemsTotal = Math.round(itemsTotal);
+  const total = roundedItemsTotal + taxShare - discountShare;
 
-  return { itemsTotal, taxShare, discountShare, total };
+  return { itemsTotal: roundedItemsTotal, taxShare, discountShare, total };
 }
 
 export function getRemainingQty(itemId: string, state: SplitBillState): number {

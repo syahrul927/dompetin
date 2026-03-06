@@ -3,9 +3,19 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { nanoid } from "nanoid";
-import { ArrowLeft, Sparkles, Plus, Camera, Image as Gallery } from "lucide-react";
-import { useSplitBill, getGrandSubtotal, getFinalTotal } from "@/components/split-bill/split-bill-context";
-import { BillItemRow } from "@/components/split-bill/BillItemRow";
+import {
+  ArrowLeft,
+  Sparkles,
+  Plus,
+  Camera,
+  Image as Gallery,
+  Trash2,
+} from "lucide-react";
+import {
+  useSplitBill,
+  getFinalTotal,
+  getItemSubtotal,
+} from "@/components/split-bill/split-bill-context";
 import { api } from "@/trpc/react";
 import { compressImage } from "@/lib/image";
 import { formatIDR } from "@/lib/formatIDR";
@@ -29,7 +39,7 @@ export default function ItemsPage() {
       if (result.success && result.items) {
         dispatch({
           type: "SET_ITEMS_FROM_SCAN",
-          items: result.items.map(item => ({ ...item, id: nanoid() })),
+          items: result.items.map((item) => ({ ...item, id: nanoid() })),
           tax: result.tax ?? 0,
           discount: result.discount ?? 0,
         });
@@ -71,43 +81,52 @@ export default function ItemsPage() {
     galleryInputRef.current?.click();
   };
 
-  const hasValidItems = state.items.some(item => item.price > 0);
+  const hasValidItems = state.items.some((item) => item.price > 0);
 
   return (
-    <div className="min-h-screen bg-background pb-32">
+    <div className="bg-background min-h-screen pb-40">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background border-b">
+      <div className="bg-background sticky top-0 z-10 border-b">
         <div className="flex items-center gap-3 p-4">
           <Link href="/dashboard">
             <Button variant="ghost" size="icon" className="shrink-0">
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
-          <h1 className="text-lg font-semibold flex-1">Split Bill</h1>
+          <h1 className="flex-1 text-lg font-semibold">Split Bill</h1>
         </div>
       </div>
 
-      <div className="p-4 space-y-6">
+      <div className="space-y-6 p-5">
         {/* AI Scan Button */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="outline"
-              className="w-full justify-start gap-2"
+              className="h-12 w-full justify-start gap-2 text-base"
               disabled={isScanning}
             >
-              <Sparkles className="w-4 h-4" />
+              <Sparkles className="h-5 w-5" />
               {isScanning ? "Memindai..." : "Scan Struk (AI)"}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-[--radix-dropdown-menu-trigger-width]">
-            <DropdownMenuItem onClick={handleCameraClick}>
-              <Camera className="w-4 h-4 mr-2" />
-              Kamera
+          <DropdownMenuContent
+            align="start"
+            className="w-[--radix-dropdown-menu-trigger-width]"
+          >
+            <DropdownMenuItem
+              onClick={handleCameraClick}
+              className="min-h-[44px] py-3"
+            >
+              <Camera className="mr-2 h-5 w-5" />
+              <span className="text-base">Kamera</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleGalleryClick}>
-              <Gallery className="w-4 h-4 mr-2" />
-              Galeri
+            <DropdownMenuItem
+              onClick={handleGalleryClick}
+              className="min-h-[44px] py-3"
+            >
+              <Gallery className="mr-2 h-5 w-5" />
+              <span className="text-base">Galeri</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -129,98 +148,197 @@ export default function ItemsPage() {
           onChange={(e) => handleImageSelect(e.target.files?.[0] ?? null)}
         />
 
-        {/* Items List */}
-        <div className="space-y-3">
-          <div className="grid grid-cols-[2fr_1fr_2fr_1.5fr_1.5fr_auto] gap-2 items-center text-xs font-medium text-muted-foreground px-1">
-            <div>Nama</div>
-            <div>Jml</div>
-            <div>Harga</div>
-            <div>Subtotal</div>
-            <div className="text-right">No</div>
-            <div />
+        {/* Items List - Card Layout for Mobile */}
+        <div className="space-y-4">
+          <div className="text-muted-foreground px-1 text-sm font-medium">
+            Daftar Item
           </div>
           {state.items.map((item, index) => (
-            <BillItemRow key={item.id} item={item} index={index} />
+            <div
+              key={item.id}
+              className="bg-card space-y-3 rounded-lg border p-4 shadow-sm"
+            >
+              {/* Item Number Header */}
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground text-xs font-medium">
+                  Item #{index + 1}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => dispatch({ type: "REMOVE_ITEM", id: item.id })}
+                  disabled={state.items.length <= 1}
+                  className="hover:bg-destructive/10 hover:text-destructive flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md p-2 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label="Hapus item"
+                >
+                  <Trash2 className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Item Name */}
+              <div className="space-y-1">
+                <label className="text-muted-foreground text-xs font-medium">
+                  Nama Item
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Contoh: Nasi Goreng"
+                  value={item.name}
+                  onChange={(e) =>
+                    dispatch({
+                      type: "UPDATE_ITEM",
+                      id: item.id,
+                      field: "name",
+                      value: e.target.value,
+                    })
+                  }
+                  className="h-12"
+                />
+              </div>
+
+              {/* Quantity and Price Row */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-muted-foreground text-xs font-medium">
+                    Jumlah
+                  </label>
+                  <Input
+                    type="number"
+                    placeholder="1"
+                    min="0"
+                    step="0.01"
+                    inputMode="decimal"
+                    value={item.qty}
+                    onChange={(e) =>
+                      dispatch({
+                        type: "UPDATE_ITEM",
+                        id: item.id,
+                        field: "qty",
+                        value: parseFloat(e.target.value) || 0,
+                      })
+                    }
+                    className="h-12"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-muted-foreground text-xs font-medium">
+                    Harga (Rp)
+                  </label>
+                  <Input
+                    type="number"
+                    placeholder="0"
+                    min="0"
+                    step="100"
+                    inputMode="numeric"
+                    value={item.price || ""}
+                    onChange={(e) =>
+                      dispatch({
+                        type: "UPDATE_ITEM",
+                        id: item.id,
+                        field: "price",
+                        value: parseFloat(e.target.value) || 0,
+                      })
+                    }
+                    className="h-12"
+                  />
+                </div>
+              </div>
+
+              {/* Subtotal Display */}
+              <div className="flex items-center justify-between border-t pt-2">
+                <span className="text-sm font-medium">Subtotal</span>
+                <span className="text-primary text-lg font-bold">
+                  {formatIDR(getItemSubtotal(item))}
+                </span>
+              </div>
+            </div>
           ))}
         </div>
 
         {/* Add Item Button */}
         <Button
           variant="outline"
-          className="w-full gap-2"
+          className="h-12 w-full gap-2 text-base"
           onClick={() => dispatch({ type: "ADD_ITEM" })}
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="h-5 w-5" />
           Tambah Item
         </Button>
 
         {/* Tax and Discount */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Pajak</label>
+            <label className="text-muted-foreground text-sm font-medium">
+              Pajak (Rp)
+            </label>
             <Input
               type="number"
               placeholder="0"
               min="0"
               step="100"
+              inputMode="numeric"
               value={state.tax || ""}
-              onChange={(e) => dispatch({
-                type: "SET_TAX",
-                value: parseFloat(e.target.value) || 0,
-              })}
+              onChange={(e) =>
+                dispatch({
+                  type: "SET_TAX",
+                  value: parseFloat(e.target.value) || 0,
+                })
+              }
+              className="h-12"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Diskon</label>
+            <label className="text-muted-foreground text-sm font-medium">
+              Diskon (Rp)
+            </label>
             <Input
               type="number"
               placeholder="0"
               min="0"
               step="100"
+              inputMode="numeric"
               value={state.discount || ""}
-              onChange={(e) => dispatch({
-                type: "SET_DISCOUNT",
-                value: parseFloat(e.target.value) || 0,
-              })}
+              onChange={(e) =>
+                dispatch({
+                  type: "SET_DISCOUNT",
+                  value: parseFloat(e.target.value) || 0,
+                })
+              }
+              className="h-12"
             />
           </div>
         </div>
       </div>
 
       {/* Sticky Bottom Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4 space-y-3 shadow-lg">
-        <div className="space-y-1 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Subtotal</span>
-            <span>{formatIDR(getGrandSubtotal(state.items))}</span>
-          </div>
+      <div className="bg-background fixed right-0 bottom-0 left-0 space-y-3 border-t p-4 shadow-lg">
+        <div className="space-y-2 text-sm">
           {state.tax > 0 && (
-            <div className="flex justify-between text-green-600">
+            <div className="flex items-center justify-between text-green-600">
               <span>+ Pajak</span>
-              <span>+ {formatIDR(state.tax)}</span>
+              <span className="font-medium">+ {formatIDR(state.tax)}</span>
             </div>
           )}
           {state.discount > 0 && (
-            <div className="flex justify-between text-destructive">
+            <div className="text-destructive flex items-center justify-between">
               <span>- Diskon</span>
-              <span>- {formatIDR(state.discount)}</span>
+              <span className="font-medium">- {formatIDR(state.discount)}</span>
             </div>
           )}
-          <div className="flex justify-between font-bold text-lg pt-2 border-t">
+          <div className="flex justify-between pt-2 text-xl font-bold">
             <span>Total</span>
-            <span>{formatIDR(getFinalTotal(state))}</span>
+            <span className="text-primary">
+              {formatIDR(getFinalTotal(state))}
+            </span>
           </div>
         </div>
 
-        <Link
-          href="/split-bill/new/split"
-          className={`block w-full text-center py-3 rounded-md font-medium transition-colors ${
-            hasValidItems
-              ? "bg-primary text-primary-foreground hover:bg-primary/90"
-              : "bg-muted text-muted-foreground pointer-events-none"
-          }`}
-        >
-          Lanjut
+        <Link href="/split-bill/new/split">
+          <Button
+            disabled={!hasValidItems}
+            className="w-full text-base"
+          >
+            Lanjut
+          </Button>
         </Link>
       </div>
     </div>
