@@ -88,7 +88,7 @@ export const aiRouter = createTRPCRouter({
               ],
             },
           ],
-          model: "llama-3.2-11b-vision-preview",
+          model: "meta-llama/llama-4-scout-17b-16e-instruct",
           temperature: 0,
           response_format: { type: "json_object" },
         });
@@ -113,8 +113,12 @@ export const aiRouter = createTRPCRouter({
     .input(
       z.object({
         text: z.string().max(1000),
-        availableWallets: z.array(z.object({ id: z.string(), name: z.string() })),
-        availableCategories: z.array(z.object({ id: z.string(), name: z.string() })),
+        availableWallets: z.array(
+          z.object({ id: z.string(), name: z.string() }),
+        ),
+        availableCategories: z.array(
+          z.object({ id: z.string(), name: z.string() }),
+        ),
       }),
     )
     .mutation(async ({ input }) => {
@@ -144,9 +148,9 @@ export const aiRouter = createTRPCRouter({
         const result = await groq.chat.completions.create({
           messages: [
             { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt }
+            { role: "user", content: userPrompt },
           ],
-          model: "llama-3.1-8b-instant",
+          model: "meta-llama/llama-4-scout-17b-16e-instruct",
           temperature: 0,
           response_format: { type: "json_object" },
         });
@@ -203,7 +207,10 @@ export const aiRouter = createTRPCRouter({
             {
               role: "user",
               content: [
-                { type: "text", text: "Please parse this receipt into individual items." },
+                {
+                  type: "text",
+                  text: "Please parse this receipt into individual items.",
+                },
                 {
                   type: "image_url",
                   image_url: {
@@ -213,7 +220,7 @@ export const aiRouter = createTRPCRouter({
               ],
             },
           ],
-          model: "llama-3.2-11b-vision-preview",
+          model: "meta-llama/llama-4-scout-17b-16e-instruct",
           temperature: 0,
           response_format: { type: "json_object" },
         });
