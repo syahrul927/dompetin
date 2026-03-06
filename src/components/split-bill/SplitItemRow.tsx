@@ -53,9 +53,8 @@ export function SplitItemRow({
         isHighlighted ? "ring-2 ring-primary bg-primary/5 border-transparent" : "bg-card"
       )}
     >
-      <div className="flex items-center gap-3">
         {/* Item details */}
-        <div className="flex-1 space-y-1">
+        <div className="space-y-1">
           <div className="flex items-center justify-between gap-2">
             <h3 className="font-medium text-sm">{item.name || "Item tanpa nama"}</h3>
             <div className="text-right">
@@ -74,7 +73,6 @@ export function SplitItemRow({
             </span>
           </div>
         </div>
-      </div>
 
       <div className="flex items-center justify-between mt-3 pt-3 border-t">
         {/* Avatar Stack */}
