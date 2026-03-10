@@ -4,6 +4,7 @@ import React from "react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { PenLine, Mic, MessageSquare, ScanLine, Camera, ImagePlus, Loader2, Scissors } from "lucide-react";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,6 +38,8 @@ export function InputMethodDrawer({
     setTimeout(() => onSelectMethod(method), 300);
   };
 
+  const menuItemClass = "flex items-center gap-4 p-4 transition-colors active:bg-muted hover:bg-muted/50 focus-visible:outline-none focus-visible:bg-muted focus-visible:ring-inset focus-visible:ring-2 focus-visible:ring-ring";
+
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="rounded-t-[28px]">
@@ -48,7 +51,7 @@ export function InputMethodDrawer({
           <div className="flex flex-col rounded-2xl border bg-card overflow-hidden shadow-sm">
             <button
               onClick={() => handleSelect("manual")}
-              className="flex items-center gap-4 p-4 transition-colors active:bg-muted hover:bg-muted/50 border-b border-border/50 focus-visible:outline-none focus-visible:bg-muted focus-visible:ring-inset focus-visible:ring-2 focus-visible:ring-ring"
+              className={cn(menuItemClass, "border-b border-border/50")}
             >
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
                 <PenLine size={24} className="text-primary" />
@@ -62,7 +65,7 @@ export function InputMethodDrawer({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
-                  className="flex items-center gap-4 p-4 transition-colors active:bg-muted hover:bg-muted/50 border-b border-border/50 relative text-left w-full focus-visible:outline-none focus-visible:bg-muted focus-visible:ring-inset focus-visible:ring-2 focus-visible:ring-ring"
+                  className={cn(menuItemClass, "border-b border-border/50 relative text-left w-full")}
                   disabled={isScanning}
                 >
                   {isScanning && (
@@ -105,7 +108,7 @@ export function InputMethodDrawer({
 
             <button
               onClick={() => handleSelect("voice")}
-              className="flex items-center gap-4 p-4 transition-colors active:bg-muted hover:bg-muted/50 border-b border-border/50 focus-visible:outline-none focus-visible:bg-muted focus-visible:ring-inset focus-visible:ring-2 focus-visible:ring-ring"
+              className={cn(menuItemClass, "border-b border-border/50")}
             >
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-500/10">
                 <Mic size={24} className="text-emerald-500" />
@@ -118,7 +121,7 @@ export function InputMethodDrawer({
 
             <button
               onClick={() => handleSelect("text")}
-              className="flex items-center gap-4 p-4 transition-colors active:bg-muted hover:bg-muted/50 focus-visible:outline-none focus-visible:bg-muted focus-visible:ring-inset focus-visible:ring-2 focus-visible:ring-ring"
+              className={menuItemClass}
             >
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-500/10">
                 <MessageSquare size={24} className="text-amber-500" />
@@ -135,7 +138,7 @@ export function InputMethodDrawer({
             <Link
               href="/split-bill/new/items"
               onClick={() => onOpenChange(false)}
-              className="flex items-center gap-4 p-4 transition-colors active:bg-muted hover:bg-muted/50 focus-visible:outline-none focus-visible:bg-muted focus-visible:ring-inset focus-visible:ring-2 focus-visible:ring-ring"
+              className={menuItemClass}
             >
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-indigo-500/10">
                 <Scissors size={24} className="text-indigo-500" />
