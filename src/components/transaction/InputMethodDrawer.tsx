@@ -130,19 +130,22 @@ export function InputMethodDrawer({
             </button>
           </div>
 
-          <Link
-            href="/split-bill/new/items"
-            onClick={() => onOpenChange(false)}
-            className="flex items-center gap-4 rounded-2xl border p-4 transition-colors active:bg-muted bg-card shadow-sm"
-          >
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-indigo-500/10">
-              <Scissors size={24} className="text-indigo-500" />
-            </div>
-            <div className="flex flex-col items-start">
-              <span className="font-semibold text-sm">Split Bill</span>
-              <span className="text-xs text-muted-foreground">Bagi tagihan dengan teman</span>
-            </div>
-          </Link>
+          {/* Block 2: Utilities */}
+          <div className="flex flex-col rounded-2xl border bg-card overflow-hidden shadow-sm">
+            <Link
+              href="/split-bill/new/items"
+              onClick={() => onOpenChange(false)}
+              className="flex items-center gap-4 p-4 transition-colors active:bg-muted hover:bg-muted/50 focus-visible:outline-none focus-visible:bg-muted focus-visible:ring-inset focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-indigo-500/10">
+                <Scissors size={24} className="text-indigo-500" />
+              </div>
+              <div className="flex flex-col items-start">
+                <span className="font-semibold text-sm">Split Bill</span>
+                <span className="text-xs text-muted-foreground">Bagi tagihan dengan teman</span>
+              </div>
+            </Link>
+          </div>
         </div>
       </DrawerContent>
     </Drawer>
