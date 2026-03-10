@@ -43,89 +43,92 @@ export function InputMethodDrawer({
         <DrawerHeader>
           <DrawerTitle className="text-center">Pilih Mode Input</DrawerTitle>
         </DrawerHeader>
-        <div className="flex flex-col gap-3 px-5 pb-8 pt-4">
-          <button
-            onClick={() => handleSelect("manual")}
-            className="flex items-center gap-4 rounded-2xl border p-4 transition-colors active:bg-muted bg-card shadow-sm"
-          >
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
-              <PenLine size={24} className="text-primary" />
-            </div>
-            <div className="flex flex-col items-start">
-              <span className="font-semibold text-sm">Manual</span>
-              <span className="text-xs text-muted-foreground">Input transaksi satu per satu</span>
-            </div>
-          </button>
+        <div className="flex flex-col gap-4 px-5 pb-8 pt-4">
+          {/* Block 1: Direct Input Methods */}
+          <div className="flex flex-col rounded-2xl border bg-card overflow-hidden shadow-sm">
+            <button
+              onClick={() => handleSelect("manual")}
+              className="flex items-center gap-4 p-4 transition-colors active:bg-muted hover:bg-muted/50 border-b border-border/50 focus-visible:outline-none focus-visible:bg-muted focus-visible:ring-inset focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                <PenLine size={24} className="text-primary" />
+              </div>
+              <div className="flex flex-col items-start">
+                <span className="font-semibold text-sm">Manual</span>
+                <span className="text-xs text-muted-foreground">Input transaksi satu per satu</span>
+              </div>
+            </button>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className="flex items-center gap-4 rounded-2xl border p-4 transition-colors active:bg-muted bg-card shadow-sm relative text-left"
-                disabled={isScanning}
-              >
-                {isScanning && (
-                  <div className="absolute inset-0 bg-background/50 rounded-2xl flex items-center justify-center z-10 backdrop-blur-[1px]">
-                    <Loader2 className="animate-spin text-primary" size={24} />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="flex items-center gap-4 p-4 transition-colors active:bg-muted hover:bg-muted/50 border-b border-border/50 relative text-left w-full focus-visible:outline-none focus-visible:bg-muted focus-visible:ring-inset focus-visible:ring-2 focus-visible:ring-ring"
+                  disabled={isScanning}
+                >
+                  {isScanning && (
+                    <div className="absolute inset-0 bg-background/50 rounded-none flex items-center justify-center z-10 backdrop-blur-[1px]">
+                      <Loader2 className="animate-spin text-primary" size={24} />
+                    </div>
+                  )}
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-500/10">
+                    <ScanLine size={24} className="text-blue-500" />
                   </div>
-                )}
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-500/10">
-                  <ScanLine size={24} className="text-blue-500" />
-                </div>
-                <div className="flex flex-col items-start">
-                  <span className="font-semibold text-sm">Scan Struk</span>
-                  <span className="text-xs text-muted-foreground">Foto struk otomatis jadi transaksi</span>
-                </div>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="center" className="w-48 rounded-xl z-[100]">
-              <DropdownMenuItem
-                onClick={() => {
-                  onCameraClick?.();
-                  handleSelect("scan");
-                }}
-                className="gap-2 cursor-pointer py-2.5"
-              >
-                <Camera className="h-4 w-4 text-muted-foreground" />
-                <span>Ambil Foto</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {
-                  onGalleryClick?.();
-                  handleSelect("scan");
-                }}
-                className="gap-2 cursor-pointer py-2.5"
-              >
-                <ImagePlus className="h-4 w-4 text-muted-foreground" />
-                <span>Pilih dari Galeri</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                  <div className="flex flex-col items-start">
+                    <span className="font-semibold text-sm">Scan Struk</span>
+                    <span className="text-xs text-muted-foreground">Foto struk otomatis jadi transaksi</span>
+                  </div>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" className="w-48 rounded-xl z-[100]">
+                <DropdownMenuItem
+                  onClick={() => {
+                    onCameraClick?.();
+                    handleSelect("scan");
+                  }}
+                  className="gap-2 cursor-pointer py-2.5"
+                >
+                  <Camera className="h-4 w-4 text-muted-foreground" />
+                  <span>Ambil Foto</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    onGalleryClick?.();
+                    handleSelect("scan");
+                  }}
+                  className="gap-2 cursor-pointer py-2.5"
+                >
+                  <ImagePlus className="h-4 w-4 text-muted-foreground" />
+                  <span>Pilih dari Galeri</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-          <button
-            onClick={() => handleSelect("voice")}
-            className="flex items-center gap-4 rounded-2xl border p-4 transition-colors active:bg-muted bg-card shadow-sm"
-          >
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-500/10">
-              <Mic size={24} className="text-emerald-500" />
-            </div>
-            <div className="flex flex-col items-start">
-              <span className="font-semibold text-sm">Suara</span>
-              <span className="text-xs text-muted-foreground">Sebutkan transaksi anda</span>
-            </div>
-          </button>
+            <button
+              onClick={() => handleSelect("voice")}
+              className="flex items-center gap-4 p-4 transition-colors active:bg-muted hover:bg-muted/50 border-b border-border/50 focus-visible:outline-none focus-visible:bg-muted focus-visible:ring-inset focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-500/10">
+                <Mic size={24} className="text-emerald-500" />
+              </div>
+              <div className="flex flex-col items-start">
+                <span className="font-semibold text-sm">Suara</span>
+                <span className="text-xs text-muted-foreground">Sebutkan transaksi anda</span>
+              </div>
+            </button>
 
-          <button
-            onClick={() => handleSelect("text")}
-            className="flex items-center gap-4 rounded-2xl border p-4 transition-colors active:bg-muted bg-card shadow-sm"
-          >
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-500/10">
-              <MessageSquare size={24} className="text-amber-500" />
-            </div>
-            <div className="flex flex-col items-start">
-              <span className="font-semibold text-sm">Teks Cerdas</span>
-              <span className="text-xs text-muted-foreground">Ketik seperti sedang chat</span>
-            </div>
-          </button>
+            <button
+              onClick={() => handleSelect("text")}
+              className="flex items-center gap-4 p-4 transition-colors active:bg-muted hover:bg-muted/50 focus-visible:outline-none focus-visible:bg-muted focus-visible:ring-inset focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-500/10">
+                <MessageSquare size={24} className="text-amber-500" />
+              </div>
+              <div className="flex flex-col items-start">
+                <span className="font-semibold text-sm">Teks Cerdas</span>
+                <span className="text-xs text-muted-foreground">Ketik seperti sedang chat</span>
+              </div>
+            </button>
+          </div>
 
           <Link
             href="/split-bill/new/items"
