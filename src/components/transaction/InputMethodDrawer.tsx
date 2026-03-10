@@ -53,8 +53,8 @@ export function InputMethodDrawer({
               onClick={() => handleSelect("manual")}
               className={cn(menuItemClass, "border-b border-border/50")}
             >
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                <PenLine size={24} className="text-primary" />
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-muted">
+                <PenLine size={24} className="text-muted-foreground" />
               </div>
               <div className="flex flex-col items-start">
                 <span className="font-semibold text-sm">Manual</span>
@@ -73,8 +73,8 @@ export function InputMethodDrawer({
                       <Loader2 className="animate-spin text-primary" size={24} />
                     </div>
                   )}
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-500/10">
-                    <ScanLine size={24} className="text-blue-500" />
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-muted">
+                    <ScanLine size={24} className="text-muted-foreground" />
                   </div>
                   <div className="flex flex-col items-start">
                     <span className="font-semibold text-sm">Scan Struk</span>
@@ -110,8 +110,8 @@ export function InputMethodDrawer({
               onClick={() => handleSelect("voice")}
               className={cn(menuItemClass, "border-b border-border/50")}
             >
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-500/10">
-                <Mic size={24} className="text-emerald-500" />
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-muted">
+                <Mic size={24} className="text-muted-foreground" />
               </div>
               <div className="flex flex-col items-start">
                 <span className="font-semibold text-sm">Suara</span>
@@ -123,8 +123,8 @@ export function InputMethodDrawer({
               onClick={() => handleSelect("text")}
               className={menuItemClass}
             >
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-500/10">
-                <MessageSquare size={24} className="text-amber-500" />
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-muted">
+                <MessageSquare size={24} className="text-muted-foreground" />
               </div>
               <div className="flex flex-col items-start">
                 <span className="font-semibold text-sm">Teks Cerdas</span>
@@ -140,8 +140,8 @@ export function InputMethodDrawer({
               onClick={() => onOpenChange(false)}
               className={menuItemClass}
             >
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-indigo-500/10">
-                <Scissors size={24} className="text-indigo-500" />
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-muted">
+                <Scissors size={24} className="text-muted-foreground" />
               </div>
               <div className="flex flex-col items-start">
                 <span className="font-semibold text-sm">Split Bill</span>
