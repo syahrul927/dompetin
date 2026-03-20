@@ -56,11 +56,13 @@ export const aiRouter = createTRPCRouter({
         "success": boolean,
         "amount": number | null,
         "name": string | null,
-        "date": "YYYY-MM-DD" | null,
+        "date": null,  // ALWAYS return null for date
         "type": "expense" | "income",
         "notes": string | null
       }
       If it is not a readable receipt, set success to false.
+
+      IMPORTANT: For the "name" field, ALWAYS extract and return the merchant/store name from the receipt. This is a REQUIRED field - never return null for "name" if a valid receipt is detected. Common examples: "Indomaret", "Alfamart", "Starbucks", "McDonald's", or the store name printed prominently on the receipt.
 
       For the "notes" field, please generate a formatted multi-line list of all items purchased with their quantities and prices. Also include any tax, service charge, discount applied, subtotal, and total amount.
       Example format:
