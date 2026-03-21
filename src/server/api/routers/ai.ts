@@ -49,7 +49,7 @@ export const aiRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       const groq = new Groq({ apiKey: env.GROQ_API_KEY });
 
-      const systemPrompt = `You are a receipt parser for a personal finance app.
+      const systemPrompt = `You are a receipt parser for an Indonesian personal finance app.
       Analyze the provided image of a receipt and extract the transaction details.
       Output strict JSON matching this exact schema:
       {
@@ -61,6 +61,13 @@ export const aiRouter = createTRPCRouter({
         "notes": string | null
       }
       If it is not a readable receipt, set success to false.
+
+      CRITICAL - Indonesian Number Format:
+      - Indonesian receipts use DOTS (.) as THOUSAND separators, NOT decimal points
+      - Example: "72.000" means 72,000 (seventy-two thousand), NOT 72.0
+      - Example: "1.500.000" means 1,500,000 (one million five hundred thousand)
+      - When extracting the amount, REMOVE all dots and parse as whole number
+      - Return the amount as a plain number (e.g., 72000, not 72000.00)
 
       IMPORTANT: For the "name" field, ALWAYS extract and return the merchant/store name from the receipt. This is a REQUIRED field - never return null for "name" if a valid receipt is detected. Common examples: "Indomaret", "Alfamart", "Starbucks", "McDonald's", or the store name printed prominently on the receipt.
 
