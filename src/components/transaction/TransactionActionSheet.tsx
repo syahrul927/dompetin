@@ -138,7 +138,18 @@ export function TransactionActionSheet({ open, onOpenChange, transaction, onEdit
 
             {/* Wallet */}
             {transaction.wallet && (
-              <DetailRow icon={Wallet} value={transaction.wallet.name} />
+              <>
+                {(transaction.type === 'transfer_debit' || transaction.type === 'transfer_credit') && transaction.toWallet ? (
+                  <div className="flex items-center gap-3 py-3">
+                    <ArrowRightLeft className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-sm">
+                      {transaction.wallet.name} → {transaction.toWallet.name}
+                    </span>
+                  </div>
+                ) : (
+                  <DetailRow icon={Wallet} value={transaction.wallet.name} />
+                )}
+              </>
             )}
 
             {/* Created By */}
