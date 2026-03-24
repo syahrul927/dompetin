@@ -41,6 +41,33 @@ interface Props {
   currentUserId?: string;
 }
 
+interface DetailRowProps {
+  icon: React.ComponentType<{ className?: string }>;
+  value: string;
+}
+
+function DetailRow({ icon: Icon, value }: DetailRowProps) {
+  return (
+    <div className="flex items-center gap-3 py-3">
+      <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
+      <span className="text-sm">{value}</span>
+    </div>
+  );
+}
+
+interface AmountRowProps {
+  amount: number;
+  type: "income" | "expense" | "transfer_debit" | "transfer_credit";
+}
+
+function AmountRow({ amount, type }: AmountRowProps) {
+  return (
+    <div className="py-3">
+      <AmountText amount={amount} type={type} size="md" />
+    </div>
+  );
+}
+
 export function TransactionActionSheet({ open, onOpenChange, transaction, onEdit, currentUserId }: Props) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { trackEvent } = useAnalytics();
