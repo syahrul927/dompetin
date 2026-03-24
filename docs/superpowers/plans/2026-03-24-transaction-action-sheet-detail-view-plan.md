@@ -17,6 +17,11 @@
 
 **No new files needed** - All changes fit within existing component structure.
 
+**Prerequisites:**
+- The `toWallet` field is already included in the transaction query (verified in `src/server/api/routers/transaction.ts`)
+- The `AmountText` component already supports `size="md"` (verified in `src/components/shared/AmountText.tsx`)
+- No database or tRPC router changes needed
+
 ---
 
 ## Task 1: Update Imports and Interface
@@ -38,14 +43,26 @@ With:
 import { Pencil, Trash2, Loader2, Calendar, Tag, Wallet, User, FileText, DollarSign, ArrowRightLeft } from "lucide-react";
 ```
 
-- [ ] **Step 2: Extend Transaction interface to include toWallet**
+- [ ] **Step 2: Verify toWallet exists in transaction query**
 
-Add `toWallet?` field after `wallet?` (after line 32):
+Run: `grep -n "toWallet" src/server/api/routers/transaction.ts`
+Expected: Multiple matches showing `toWallet` is already in the schema and queries
+
+- [ ] **Step 3: Extend Transaction interface to include toWallet**
+
+Add `toWallet?` field at the end of the Transaction interface (before closing brace on line 33):
 ```typescript
 toWallet?: { id: string; name: string } | null;
 ```
 
-- [ ] **Step 3: Verify TypeScript compilation**
+**Context:** The Transaction object is passed as a prop and is populated by the tRPC query. The `toWallet` field is already included in the database query.
+
+- [ ] **Step 4: Verify AmountText component supports size="md"**
+
+Run: `grep -A 10 "interface.*AmountText" src/components/shared/AmountText.tsx`
+Expected: See `size?: "sm" | "md" | "lg"` in the interface
+
+- [ ] **Step 5: Verify TypeScript compilation**
 
 Run: `pnpm typecheck`
 Expected: No errors
@@ -309,6 +326,8 @@ Replace with:
 )}
 ```
 
+**Note:** The spec uses `type === 'transfer'` as shorthand, but the actual TypeScript types are `transfer_debit` and `transfer_credit`. The implementation checks for both explicitly to match the type system.
+
 This conditionally shows:
 - For transfers: Both wallets with ArrowRightLeft icon ("GoPay → Bank BCA")
 - For non-transfers: Single wallet with Wallet icon
@@ -333,6 +352,8 @@ git commit -m "feat(ui): add transfer transaction wallet direction display"
 - Test: Manual browser verification
 
 Verify the implementation matches the design specification.
+
+**Pre-requisite:** Development server should be running (`pnpm dev` in background).
 
 - [ ] **Step 1: Start development server**
 
