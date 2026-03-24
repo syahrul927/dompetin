@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, Loader2 } from "lucide-react";
+import { Pencil, Trash2, Loader2, Calendar, Tag, Wallet, User, FileText, DollarSign, ArrowRightLeft } from "lucide-react";
 import { useAnalytics } from "@/hooks/use-analytics";
 import {
   AlertDialog,
@@ -16,6 +16,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { api } from "@/trpc/react";
+import { AmountText } from "@/components/shared/AmountText";
+import { formatIDR } from "@/lib/formatIDR";
 
 interface Transaction {
   id: string;
@@ -26,6 +28,9 @@ interface Transaction {
   feeAmount?: number;
   type: "income" | "expense" | "transfer_debit" | "transfer_credit";
   createdBy?: { id: string; name: string };
+  notes?: string | null;
+  wallet?: { id: string; name: string } | null;
+  toWallet?: { id: string; name: string } | null;
 }
 
 interface Props {
@@ -63,44 +68,80 @@ export function TransactionActionSheet({ open, onOpenChange, transaction, onEdit
     }
   };
 
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+  };
+
   return (
     <>
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent className="px-0 pb-8 pt-0">
           <DrawerHeader className="border-b px-5 pb-3 pt-4 text-left">
             <DrawerTitle>{transaction.name}</DrawerTitle>
-            <p className="text-sm text-muted-foreground">{transaction.category}</p>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>{transaction.category}</span>
+              {transaction.wallet && (
+                <>
+                  <span>·</span>
+                  <span>{transaction.wallet.name}</span>
+                </>
+              )}
+            </div>
           </DrawerHeader>
-          <div className="flex flex-col p-4 space-y-2">
-            {!isCreator ? (
-              <p className="text-center text-sm text-muted-foreground py-4">
-                Hanya pembuat yang dapat mengubah transaksi ini.
+
+          {/* Summary Card Section */}
+          <div className="flex flex-col items-center px-5 pt-4 pb-6">
+            {/* Large Amount Display */}
+            <AmountText amount={transaction.amount} type={transaction.type} size="lg" />
+
+            {/* Transfer Fee (if applicable) */}
+            {transaction.feeAmount && transaction.feeAmount > 0 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                + Biaya {formatIDR(transaction.feeAmount)}
               </p>
-            ) : (
-              <>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start h-14 text-base rounded-xl"
-                  onClick={() => {
-                    onOpenChange(false);
-                    // Add slight delay to allow drawer to close smoothly
-                    setTimeout(onEdit, 150);
-                  }}
-                >
-                  <Pencil className="mr-3 h-5 w-5" />
-                  Edit Transaksi
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start h-14 text-base text-destructive hover:text-destructive hover:bg-destructive/10 rounded-xl"
-                  onClick={() => setShowDeleteConfirm(true)}
-                >
-                  <Trash2 className="mr-3 h-5 w-5" />
-                  Hapus Transaksi
-                </Button>
-              </>
+            )}
+
+            {/* Date */}
+            <p className="text-sm text-muted-foreground mt-2">{formatDate(transaction.date)}</p>
+
+            {/* Notes Preview (if exists) */}
+            {transaction.notes && (
+              <div className="mt-4 w-full bg-muted/50 rounded-xl p-3">
+                <p className="text-sm line-clamp-3 text-foreground/90">{transaction.notes}</p>
+              </div>
             )}
           </div>
+
+          {/* Action Buttons */}
+          {!isCreator ? (
+            <div className="px-5 pb-4">
+              <p className="text-center text-sm text-muted-foreground">
+                Hanya pembuat yang dapat mengubah transaksi ini.
+              </p>
+            </div>
+          ) : (
+            <div className="flex gap-2 px-5 pb-5">
+              <Button
+                className="flex-1 h-11 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-medium"
+                onClick={() => {
+                  onOpenChange(false);
+                  setTimeout(onEdit, 150);
+                }}
+              >
+                <Pencil className="mr-2 h-4 w-4" />
+                Edit
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1 h-11 rounded-full text-destructive border-destructive/20 hover:bg-destructive/10 hover:text-destructive text-sm font-medium"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Hapus
+              </Button>
+            </div>
+          )}
         </DrawerContent>
       </Drawer>
 
