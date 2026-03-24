@@ -146,10 +146,15 @@ export function TransactionActionSheet({ open, onOpenChange, transaction, onEdit
               <DetailRow icon={User} value={transaction.createdBy.name} />
             )}
 
-            {/* Notes Preview (if exists) */}
+            {/* Notes Section */}
             {transaction.notes && (
-              <div className="mt-2 bg-muted/50 rounded-xl p-3">
-                <p className="text-sm line-clamp-3 text-foreground/90">{transaction.notes}</p>
+              <div className="mt-2 pt-2 border-t border-border/50">
+                <div className="flex gap-3 py-3">
+                  <FileText className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                  <p className="flex-1 text-sm leading-relaxed whitespace-pre-wrap">
+                    {transaction.notes}
+                  </p>
+                </div>
               </div>
             )}
           </div>
