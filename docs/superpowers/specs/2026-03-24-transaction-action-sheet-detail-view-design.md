@@ -77,39 +77,81 @@ interface Transaction {
   type: "income" | "expense" | "transfer_debit" | "transfer_credit";
   notes?: string | null;
   wallet?: { id: string; name: string } | null;
+  toWallet?: { id: string; name: string } | null;  // For transfers
   createdBy?: { id: string; name: string } | null;
 }
 ```
 
 **New Imports:**
 ```typescript
-import { Calendar, Tag, Wallet, User, FileText, DollarSign } from "lucide-react";
+import { Calendar, Tag, Wallet, User, FileText, DollarSign, ArrowRightLeft } from "lucide-react";
 ```
 
 **Row Component Pattern:**
 ```tsx
 // Reusable detail row component
-function DetailRow({ icon: Icon, label, value }: DetailRowProps) {
+// py-3 provides 24px total height (12px top/bottom) for adequate touch targets
+function DetailRow({ icon: Icon, value }: DetailRowProps) {
   return (
-    <div className="flex items-center gap-3 py-2">
+    <div className="flex items-center gap-3 py-3">
       <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
       <span className="text-sm">{value}</span>
     </div>
   );
 }
+
+// Special row for amount (no icon)
+function AmountRow({ amount, type }: AmountRowProps) {
+  return (
+    <div className="py-3">
+      <AmountText amount={amount} type={type} size="md" />
+    </div>
+  );
+}
 ```
+
+### Row Ordering
+
+Fields appear in this logical order:
+1. Amount (no icon - color speaks for itself)
+2. Fee (only if transfer with fee)
+3. Date
+4. Category
+5. Wallet
+6. Created By (only if exists)
+7. Notes (only if exists)
 
 ### Field Specifications
 
 | Field | Icon | Display Format | Notes |
 |-------|------|---------------|-------|
-| **Amount** | `DollarSign` | `AmountText` with `size="md"` | Balanced size, not hero |
+| **Amount** | None | `AmountText` with `size="md"` | No icon needed - color coding is sufficient |
+| **Fee** | `DollarSign` | `+ Biaya {formatIDR(feeAmount)}` | Only if feeAmount > 0, immediately after amount |
 | **Date** | `Calendar` | `formatDate()` - "12 Mar 2026" | Indonesian locale |
 | **Category** | `Tag` | `{category}` | Plain text name |
 | **Wallet** | `Wallet` | `{wallet.name}` | Only if wallet exists |
 | **Created By** | `User` | `{createdBy.name}` | Only if createdBy exists |
-| **Notes** | `FileText` | `{notes}` | Full text, no line-clamp, multiline if needed |
-| **Fee** | `DollarSign` | `+ Biaya {formatIDR(feeAmount)}` | Only if feeAmount > 0 |
+| **Notes** | `FileText` | `{notes}` | Full text, multiline, `mt-0.5` on icon aligns with first line |
+
+### Transfer Transaction Handling
+
+For `transfer_debit` and `transfer_credit` types:
+- **Amount display**: Use `AmountText` component which handles color/sign correctly
+  - `transfer_debit`: Shows with negative sign and destructive color
+  - `transfer_credit`: Shows with positive sign and primary color
+- **Wallet display**: For transfers, show both wallets:
+  ```tsx
+  {type === 'transfer' && transaction.toWallet && (
+    <div className="flex items-center gap-3 py-2">
+      <ArrowRightLeft className="h-4 w-4 text-muted-foreground shrink-0" />
+      <span className="text-sm">
+        {wallet?.name} → {transaction.toWallet.name}
+      </span>
+    </div>
+  )}
+  ```
+- **Fee**: Appears for both debit and credit views, positioned after amount
+- **Direction**: The icon-based approach naturally conveys transfer movement
 
 ### Spacing & Layout
 
@@ -122,23 +164,37 @@ function DetailRow({ icon: Icon, label, value }: DetailRowProps) {
 
 **Individual Row:**
 ```tsx
-<div className="flex items-center gap-3 py-2">
+<div className="flex items-center gap-3 py-3">
   <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
   <span className="text-sm">{value}</span>
 </div>
 ```
 
+**Spacing Rationale:**
+- `py-3` (12px top/bottom) = 24px total height per row
+- Provides adequate touch targets while maintaining compact layout
+- `gap-3` (12px) horizontal spacing between icon and text
+- Consistent with 8dp spacing system (py-3 = 1.5 units)
+
 **Notes Section (special handling):**
 ```tsx
 {notes && (
-  <div className="flex gap-3 py-2">
-    <FileText className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-    <p className="flex-1 text-sm leading-relaxed whitespace-pre-wrap">
-      {notes}
-    </p>
+  <div className="mt-2 pt-2 border-t border-border/50">
+    <div className="flex gap-3 py-3">
+      <FileText className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+      <p className="flex-1 text-sm leading-relaxed whitespace-pre-wrap">
+        {notes}
+      </p>
+    </div>
   </div>
 )}
 ```
+
+**Notes on Notes Section:**
+- `mt-2 pt-2 border-t border-border/50` - Visual separator to distinguish notes from structured data
+- `mt-0.5` on FileText icon - Aligns icon with first line of potentially multiline text
+- `leading-relaxed` - Better line height for readability of longer text content
+- `whitespace-pre-wrap` - Preserves line breaks from user input while wrapping naturally
 
 **Action Buttons (unchanged):**
 ```tsx
@@ -176,29 +232,37 @@ function DetailRow({ icon: Icon, label, value }: DetailRowProps) {
 
 1. **Remove hero amount treatment**
    - Change `<AmountText size="lg" />` to `size="md"`
-   - Remove centering wrapper
-   - Integrate into row pattern
+   - Remove centering wrapper (`flex flex-col items-center`)
+   - Integrate into row pattern (no icon, color speaks for itself)
 
 2. **Add structured rows**
-   - Each field gets icon + value row
-   - Consistent `py-2` vertical spacing
+   - Each field gets icon + value row (except amount)
+   - Consistent `py-3` vertical spacing (24px total for touch targets)
    - `gap-3` horizontal spacing between icon and text
 
 3. **Add "Created By" field**
    - New row with User icon
    - Show creator name
    - Only renders if `createdBy` exists
+   - Critical for family/shared workspace context
 
 4. **Update notes display**
-   - Remove background card styling
-   - Remove line-clamp
-   - Show full notes with `whitespace-pre-wrap`
-   - Keep icon alignment with other rows
+   - Remove background card styling (`bg-muted/50`)
+   - Remove line-clamp (show full notes)
+   - Add visual separator (`border-t`) before notes section
+   - Use `whitespace-pre-wrap` for natural wrapping
+   - Icon aligned with first line (`mt-0.5`)
 
 5. **Enhance fee display**
-   - Currently shown below amount
-   - Move to dedicated row with DollarSign icon
+   - Move from inline text to dedicated row
+   - Add DollarSign icon
+   - Position immediately after amount row
    - More consistent with other fields
+
+6. **Handle transfer transactions**
+   - Show both wallets with ArrowRightLeft icon
+   - Display direction: "From → To"
+   - Fee appears for both debit/credit transfer views
 
 ### Edge Cases
 
