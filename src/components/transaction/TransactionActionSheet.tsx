@@ -118,23 +118,37 @@ export function TransactionActionSheet({ open, onOpenChange, transaction, onEdit
           </DrawerHeader>
 
           {/* Summary Card Section */}
-          <div className="flex flex-col items-center px-5 pt-4 pb-6">
-            {/* Large Amount Display */}
-            <AmountText amount={transaction.amount} type={transaction.type} size="lg" />
+          <div className="px-5 pt-4 pb-6">
+            {/* Amount */}
+            <AmountRow amount={transaction.amount} type={transaction.type} />
 
-            {/* Transfer Fee (if applicable) */}
+            {/* Fee */}
             {transaction.feeAmount && transaction.feeAmount > 0 && (
-              <p className="text-xs text-muted-foreground mt-1">
-                + Biaya {formatIDR(transaction.feeAmount)}
-              </p>
+              <DetailRow
+                icon={DollarSign}
+                value={`+ Biaya ${formatIDR(transaction.feeAmount)}`}
+              />
             )}
 
             {/* Date */}
-            <p className="text-sm text-muted-foreground mt-2">{formatDate(transaction.date)}</p>
+            <DetailRow icon={Calendar} value={formatDate(transaction.date)} />
+
+            {/* Category */}
+            <DetailRow icon={Tag} value={transaction.category} />
+
+            {/* Wallet */}
+            {transaction.wallet && (
+              <DetailRow icon={Wallet} value={transaction.wallet.name} />
+            )}
+
+            {/* Created By */}
+            {transaction.createdBy && (
+              <DetailRow icon={User} value={transaction.createdBy.name} />
+            )}
 
             {/* Notes Preview (if exists) */}
             {transaction.notes && (
-              <div className="mt-4 w-full bg-muted/50 rounded-xl p-3">
+              <div className="mt-2 bg-muted/50 rounded-xl p-3">
                 <p className="text-sm line-clamp-3 text-foreground/90">{transaction.notes}</p>
               </div>
             )}
