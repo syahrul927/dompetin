@@ -75,7 +75,7 @@ export default function TransactionsPage() {
   const now = new Date();
   const [month, setMonth] = useState(now.getUTCMonth() + 1);
   const [year, setYear] = useState(now.getUTCFullYear());
-  const [limit, setLimit] = useState(PAGE_SIZE);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   // Sheets state
   const [actionTx, setActionTx] = useState<Record<string, unknown> | null>(
@@ -84,7 +84,7 @@ export default function TransactionsPage() {
   const [editTx, setEditTx] = useState<Record<string, unknown> | null>(null);
 
   const { data, isLoading: isLoadingTransactions } = api.transaction.getTransactions.useQuery(
-    { workspaceId, month, year, limit, offset: 0 },
+    { workspaceId, month, year, limit: 1000, offset: 0 },
     { enabled: !!workspaceId },
   );
 
@@ -98,11 +98,12 @@ export default function TransactionsPage() {
     { enabled: !!workspaceId },
   );
 
-  const transactions = data?.transactions ?? [];
+  const allTransactions = data?.transactions ?? [];
   const hasMore = data?.hasMore ?? false;
+  const transactions = allTransactions.slice(0, visibleCount);
 
   // Transform API transactions to TransactionRow format
-  const transformedTransactions = transactions.map((tx) => {
+  const transformedTransactions = allTransactions.map((tx) => {
     const amount = Math.abs(parseFloat(tx.amount));
     let type: "income" | "expense" | "transfer_debit" | "transfer_credit";
 
@@ -158,6 +159,7 @@ export default function TransactionsPage() {
             onValueChange={(val) => {
               const m = parseInt(val);
               setMonth(m);
+              setVisibleCount(PAGE_SIZE);
               trackEvent("transactions_filter_month_changed", { month: m });
             }}
           >
@@ -179,6 +181,7 @@ export default function TransactionsPage() {
             onValueChange={(val) => {
               const y = parseInt(val);
               setYear(y);
+              setVisibleCount(PAGE_SIZE);
               trackEvent("transactions_filter_year_changed", { year: y });
             }}
           >
@@ -214,7 +217,7 @@ export default function TransactionsPage() {
         </div>
 
         {/* Loading state */}
-        {isLoadingTransactions && transactions.length === 0 && (
+        {isLoadingTransactions && allTransactions.length === 0 && (
           <div className="space-y-4">
             {[1, 2, 3].map((g) => (
               <div key={g}>
@@ -237,7 +240,7 @@ export default function TransactionsPage() {
         )}
 
         {/* Empty state */}
-        {!isLoadingTransactions && transactions.length === 0 && (
+        {!isLoadingTransactions && allTransactions.length === 0 && (
           <Card className="mt-4 rounded-[20px] p-8 text-center bg-secondary/20 border-dashed">
             <p className="text-muted-foreground text-sm">
               Tidak ada transaksi untuk periode ini.
@@ -275,14 +278,15 @@ export default function TransactionsPage() {
             })}
 
             {/* Load More */}
-            {hasMore && (
+            {visibleCount < allTransactions.length && (
               <div className="flex justify-center pt-2">
                 <Button
                   variant="ghost"
                   onClick={() => {
-                    setLimit((prev) => prev + PAGE_SIZE);
+                    const nextCount = visibleCount + PAGE_SIZE;
+                    setVisibleCount(nextCount);
                     trackEvent("transactions_load_more_clicked", {
-                      current_limit: limit + PAGE_SIZE,
+                      current_limit: nextCount,
                     });
                   }}
                   className="text-primary text-sm font-medium h-10 rounded-full hover:bg-primary/5"

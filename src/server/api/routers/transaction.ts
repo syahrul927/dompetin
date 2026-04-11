@@ -254,6 +254,11 @@ export const transactionRouter = {
           if (grouped) {
             groupedTransactions.push(grouped);
             processedTransferIds.add(tx.transferId);
+          } else {
+            // Fallback: If transfer data is incomplete (e.g., some pieces deleted),
+            // still show the individual transaction instead of silently skipping it
+            groupedTransactions.push(tx);
+            processedTransferIds.add(tx.transferId);
           }
         } else {
           groupedTransactions.push(tx);
