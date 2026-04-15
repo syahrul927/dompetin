@@ -1488,4 +1488,129 @@ export const transactionRouter = {
         cashflow,
       };
     }),
+
+  /**
+   * Bulk create transactions
+   */
+  createBulkTransactions: protectedProcedure
+    .input(
+      z.object({
+        transactions: z.array(
+          z.object({
+            type: z.enum(["income", "expense"]),
+            amount: z.number().positive(),
+            name: z.string().min(1).max(255),
+            notes: z.string().max(1000).optional(),
+            date: z.string().datetime(),
+            categoryId: z.string().uuid(),
+            walletId: z.string().uuid(),
+          }),
+        ),
+        workspaceId: z.string().uuid(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Verify workspace access
+      const member = await db.query.workspaceMember.findFirst({
+        where: and(
+          eq(workspaceMember.workspaceId, input.workspaceId),
+          eq(workspaceMember.userId, ctx.session.user.id),
+        ),
+      });
+
+      if (!member) {
+        throw new Error("Access denied to this workspace");
+      }
+
+      if (input.transactions.length === 0) {
+        throw new Error("No transactions to create");
+      }
+
+      if (input.transactions.length > 100) {
+        throw new Error("Maximum 100 transactions per bulk import");
+      }
+
+      // Verify all wallets belong to the workspace
+      const walletIds = [...new Set(input.transactions.map((t) => t.walletId))];
+      const wallets = await db.query.wallet.findMany({
+        where: and(
+          inArray(walletSchema.id, walletIds),
+          eq(walletSchema.workspaceId, input.workspaceId),
+        ),
+      });
+
+      if (wallets.length !== walletIds.length) {
+        throw new Error("One or more wallets not found or not in workspace");
+      }
+
+      // Verify all categories belong to the workspace
+      const categoryIds = [...new Set(input.transactions.map((t) => t.categoryId))];
+      const categories = await db.query.category.findMany({
+        where: and(
+          inArray(categorySchema.id, categoryIds),
+          eq(categorySchema.workspaceId, input.workspaceId),
+        ),
+      });
+
+      if (categories.length !== categoryIds.length) {
+        throw new Error("One or more categories not found or not in workspace");
+      }
+
+      // Execute all inserts and balance updates in a single DB transaction
+      const result = await db.transaction(async (tx) => {
+        let created = 0;
+
+        for (const item of input.transactions) {
+          const transactionId = crypto.randomUUID();
+          const amountDb = (item.amount / 100).toFixed(2);
+
+          await tx.insert(transaction).values({
+            id: transactionId,
+            type: item.type,
+            amount: amountDb,
+            name: item.name,
+            notes: item.notes ?? null,
+            date: new Date(item.date),
+            categoryId: item.categoryId,
+            walletId: item.walletId,
+            workspaceId: input.workspaceId,
+            createdBy: ctx.session.user.id,
+          });
+
+          // Fetch fresh wallet balance inside the transaction
+          const currentWallet = await tx.query.wallet.findFirst({
+            where: eq(walletSchema.id, item.walletId),
+          });
+
+          if (!currentWallet) throw new Error(`Wallet ${item.walletId} not found during update`);
+
+          const currentBalance = Number(currentWallet.balance);
+          const amountNum = Number(amountDb);
+
+          if (item.type === "income") {
+            await tx
+              .update(walletSchema)
+              .set({
+                balance: (currentBalance + amountNum).toFixed(2),
+                updatedAt: new Date(),
+              })
+              .where(eq(walletSchema.id, item.walletId));
+          } else {
+            await tx
+              .update(walletSchema)
+              .set({
+                balance: (currentBalance - amountNum).toFixed(2),
+                updatedAt: new Date(),
+              })
+              .where(eq(walletSchema.id, item.walletId));
+          }
+
+          created++;
+        }
+
+        return created;
+      });
+
+      return { count: result };
+    }),
 };
