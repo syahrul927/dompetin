@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { InputMethodDrawer } from "./InputMethodDrawer";
 import { SmartInputDrawer } from "./SmartInputDrawer";
 import { AddTransactionSheet } from "./AddTransactionSheet";
@@ -23,6 +24,8 @@ export function TransactionManager({
   type ActiveView = 'input-method' | 'smart' | 'add' | null;
   const [activeView, setActiveView] = useState<ActiveView>(null);
 
+  const router = useRouter();
+
   const [smartMode, setSmartMode] = useState<"text" | "voice">("text");
   const [initialData, setInitialData] = useState<Record<string, unknown> | null>(null);
 
@@ -31,7 +34,10 @@ export function TransactionManager({
   // Scanner logic
   const cameraInputRef = React.useRef<HTMLInputElement>(null);
   const galleryInputRef = React.useRef<HTMLInputElement>(null);
+  const mutationCameraInputRef = React.useRef<HTMLInputElement>(null);
+  const mutationGalleryInputRef = React.useRef<HTMLInputElement>(null);
   const scanMutation = api.ai.scanReceipt.useMutation();
+  const scanBankMutation = api.ai.scanBankMutation.useMutation();
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -62,14 +68,48 @@ export function TransactionManager({
     }
   };
 
-  const handleSelectMethod = (method: "manual" | "voice" | "text" | "scan") => {
+  const handleMutationFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const compressedBase64 = await compressImage(file);
+      const result = await scanBankMutation.mutateAsync({
+        imageBase64: compressedBase64,
+        mimeType: file.type || "image/jpeg",
+      });
+
+      if (result.success && result.transactions.length > 0) {
+        const importData = result.transactions.map((t) => ({
+          ...t,
+          id: crypto.randomUUID(),
+          walletId: undefined,
+          categoryId: undefined,
+        }));
+        sessionStorage.setItem("importMutationData", JSON.stringify(importData));
+        onOpenChange(false);
+        router.push("/transactions/import");
+      } else {
+        const errorMsg = (result as { error?: string }).error || "Tidak ada transaksi terdeteksi dari gambar";
+        alert(errorMsg);
+      }
+    } catch (error) {
+      console.error("Bank mutation scan error:", error);
+      alert("Terjadi kesalahan saat memindai mutasi");
+    } finally {
+      if (mutationCameraInputRef.current) mutationCameraInputRef.current.value = "";
+      if (mutationGalleryInputRef.current) mutationGalleryInputRef.current.value = "";
+    }
+  };
+
+  const handleSelectMethod = (method: "manual" | "voice" | "text" | "scan" | "mutation") => {
     if (method === "manual") {
       setInitialData(null);
       setActiveView("add");
     } else if (method === "voice" || method === "text") {
       setSmartMode(method);
       setActiveView("smart");
-    } else if (method === "scan") {
+    } else if (method === "scan" || method === "mutation") {
       // InputMethodDrawer handles opening the dropdown.
       // The dropdown options trigger the inputs below.
     }
@@ -121,6 +161,9 @@ export function TransactionManager({
         isScanning={scanMutation.isPending}
         onCameraClick={() => cameraInputRef.current?.click()}
         onGalleryClick={() => galleryInputRef.current?.click()}
+        isScanningMutation={scanBankMutation.isPending}
+        onMutationCameraClick={() => mutationCameraInputRef.current?.click()}
+        onMutationGalleryClick={() => mutationGalleryInputRef.current?.click()}
       />
 
       <SmartInputDrawer
@@ -159,6 +202,23 @@ export function TransactionManager({
         className="hidden"
         ref={galleryInputRef}
         onChange={handleFileChange}
+      />
+
+      {/* Hidden file inputs for bank mutation scanning */}
+      <input
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        ref={mutationCameraInputRef}
+        onChange={handleMutationFileChange}
+      />
+      <input
+        type="file"
+        accept="image/*"
+        className="hidden"
+        ref={mutationGalleryInputRef}
+        onChange={handleMutationFileChange}
       />
     </>
   );

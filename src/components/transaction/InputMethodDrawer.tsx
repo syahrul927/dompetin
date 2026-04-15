@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { PenLine, Mic, MessageSquare, ScanLine, Camera, ImagePlus, Loader2, Scissors } from "lucide-react";
+import { PenLine, Mic, MessageSquare, ScanLine, Camera, ImagePlus, Loader2, Scissors, FileStack } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import {
@@ -15,10 +15,13 @@ import {
 interface InputMethodDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSelectMethod: (method: "manual" | "voice" | "text" | "scan") => void;
+  onSelectMethod: (method: "manual" | "voice" | "text" | "scan" | "mutation") => void;
   isScanning?: boolean;
   onCameraClick?: () => void;
   onGalleryClick?: () => void;
+  isScanningMutation?: boolean;
+  onMutationCameraClick?: () => void;
+  onMutationGalleryClick?: () => void;
 }
 
 export function InputMethodDrawer({
@@ -28,11 +31,14 @@ export function InputMethodDrawer({
   isScanning,
   onCameraClick,
   onGalleryClick,
+  isScanningMutation,
+  onMutationCameraClick,
+  onMutationGalleryClick,
 }: InputMethodDrawerProps) {
-  const handleSelect = (method: "manual" | "voice" | "text" | "scan") => {
-    if (method === "scan") {
+  const handleSelect = (method: "manual" | "voice" | "text" | "scan" | "mutation") => {
+    if (method === "scan" || method === "mutation") {
       onSelectMethod(method);
-      return; // Keep drawer open to show loading spinner
+      return;
     }
     onOpenChange(false);
     setTimeout(() => onSelectMethod(method), 300);
@@ -138,7 +144,7 @@ export function InputMethodDrawer({
             <Link
               href="/split-bill/new/items"
               onClick={() => onOpenChange(false)}
-              className={menuItemClass}
+              className={cn(menuItemClass, "border-b border-border/50")}
             >
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-muted">
                 <Scissors size={24} className="text-muted-foreground" />
@@ -148,6 +154,50 @@ export function InputMethodDrawer({
                 <span className="text-xs text-muted-foreground">Bagi tagihan dengan teman</span>
               </div>
             </Link>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className={cn(menuItemClass, "relative text-left w-full")}
+                  disabled={isScanningMutation}
+                >
+                  {isScanningMutation && (
+                    <div className="absolute inset-0 bg-background/50 rounded-none flex items-center justify-center z-10 backdrop-blur-[1px]">
+                      <Loader2 className="animate-spin text-primary" size={24} />
+                    </div>
+                  )}
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-muted">
+                    <FileStack size={24} className="text-muted-foreground" />
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <span className="font-semibold text-sm">Impor Mutasi</span>
+                    <span className="text-xs text-muted-foreground">Scan mutasi bank & e-wallet</span>
+                  </div>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" className="w-48 rounded-xl z-[100]">
+                <DropdownMenuItem
+                  onClick={() => {
+                    onMutationCameraClick?.();
+                    handleSelect("mutation");
+                  }}
+                  className="gap-2 cursor-pointer py-2.5"
+                >
+                  <Camera className="h-4 w-4 text-muted-foreground" />
+                  <span>Ambil Foto</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    onMutationGalleryClick?.();
+                    handleSelect("mutation");
+                  }}
+                  className="gap-2 cursor-pointer py-2.5"
+                >
+                  <ImagePlus className="h-4 w-4 text-muted-foreground" />
+                  <span>Pilih dari Galeri</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </DrawerContent>
