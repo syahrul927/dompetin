@@ -38,12 +38,15 @@ interface AddTransactionSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialData?: Record<string, unknown> | null; // The full transaction object from DB
+  /** Optional callback after successful save, receiving the saved transaction data */
+  onSave?: (data: Record<string, unknown>) => void;
 }
 
 export function AddTransactionSheet({
   open,
   onOpenChange,
   initialData,
+  onSave,
 }: AddTransactionSheetProps) {
   const { workspaceId } = useActiveWorkspace();
   const { trackEvent } = useAnalytics();
@@ -207,6 +210,24 @@ export function AddTransactionSheet({
     if (!canSubmit || isSubmitting || isLocked) return;
 
     setIsLocked(true);
+
+    // If onSave callback is provided (bulk import mode), delegate to parent
+    if (onSave) {
+      onSave({
+        type,
+        amount,
+        name: (name || "").trim(),
+        notes: (note || "").trim(),
+        date,
+        walletId,
+        categoryId,
+        budgetId,
+      });
+      resetForm();
+      onOpenChange(false);
+      setIsLocked(false);
+      return;
+    }
 
     const amountInCents = amount * 100;
     const dateISO = new Date(date + "T00:00:00Z").toISOString();
