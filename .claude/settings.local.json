@@ -1,7 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "mcp__linear-server__list_projects"
-    ]
-  }
-}
