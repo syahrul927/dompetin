@@ -38,6 +38,19 @@ const receiptItemsSchema = z.object({
   discount: z.number().nullable(),
 });
 
+const bankMutationTransactionSchema = z.object({
+  name: z.string(),
+  amount: z.number(),
+  date: z.string(),
+  type: z.enum(["income", "expense"]),
+  notes: z.string(),
+});
+
+const bankMutationSchema = z.object({
+  success: z.boolean(),
+  transactions: z.array(bankMutationTransactionSchema),
+});
+
 export const aiRouter = createTRPCRouter({
   scanReceipt: protectedProcedure
     .input(
@@ -244,6 +257,113 @@ export const aiRouter = createTRPCRouter({
           items: null,
           tax: null,
           discount: null,
+        };
+      }
+    }),
+
+  scanBankMutation: protectedProcedure
+    .input(
+      z.object({
+        imageBase64: z.string(),
+        mimeType: z.string(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const groq = new Groq({ apiKey: env.GROQ_API_KEY });
+
+      const systemPrompt = `You are a bank/e-wallet mutation statement parser for an Indonesian personal finance app.
+Analyze the provided image of a bank or e-wallet mutation/history screenshot and extract ALL transaction rows.
+
+You must output strict JSON matching this exact schema:
+{
+  "success": boolean,
+  "transactions": [
+    {
+      "name": string,
+      "amount": number,
+      "date": "YYYY-MM-DD",
+      "type": "income" | "expense",
+      "notes": string
+    }
+  ]
+}
+
+RULES:
+1. Extract EVERY transaction row visible in the image. Do NOT skip any rows.
+2. "name": The merchant name, transfer sender/receiver, or description of the transaction.
+3. "amount": The transaction amount as a WHOLE number in IDR (no decimals).
+
+CRITICAL - Indonesian Number Format:
+- Indonesian formats use DOTS (.) as THOUSAND separators, NOT decimal points.
+- "72.000" means 72000, NOT 72.0.
+- "1.500.000" means 1500000.
+- Remove ALL dots from amounts before parsing.
+- Comma (,) is used as decimal separator but for IDR amounts it is extremely rare. If you see "72.000,50" treat it as 72000.
+
+4. "date": Parse the transaction date into YYYY-MM-DD format.
+- Handle common Indonesian date formats: DD/MM/YYYY, DD-MM-YYYY, DD MMM YYYY (Indonesian month names: Jan, Feb, Mar, Apr, Mei, Jun, Jul, Agu, Sep, Okt, Nov, Des).
+- If the year is not visible, assume the current year 2026.
+- If the date cannot be parsed, use "2026-01-01".
+
+5. "type": Determine based on these rules:
+- CREDIT entries (money IN): incoming transfers (TRF MASUK, TRANSFER CR, top-up, received money) → "income"
+- DEBIT entries (money OUT): payments, outgoing transfers (TRF KELUAR, TRANSFER DB, purchases, withdrawals) → "expense"
+- Keywords for "income": CR, Credit, Masuk, Terima, Top Up, Refund, Cashback
+- Keywords for "expense": DB, Debit, Keluar, Bayar, Beli, Pembayaran, Tarik, Transfer
+- If ambiguous, default to "expense".
+
+6. "notes": Include any additional details like reference numbers, transaction IDs, or remarks visible on the row. If none, use empty string "".
+
+7. SKIP: header rows, "SALDO" / "BALANCE" rows, date-only rows with no transaction, and rows that are clearly not transactions.
+
+8. The image may come from: BCA, BRI, Mandiri, BNI, CIMB, Permata, Danamon, GoPay, OVO, DANA, ShopeePay, LinkAja, or any other Indonesian bank/e-wallet app.
+
+9. If the image is not a readable mutation/bank statement, set success to false and transactions to empty array.`;
+
+      try {
+        const result = await groq.chat.completions.create({
+          messages: [
+            { role: "system", content: systemPrompt },
+            {
+              role: "user",
+              content: [
+                { type: "text", text: "Please parse this bank/e-wallet mutation screenshot into individual transactions." },
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: `data:${input.mimeType};base64,${input.imageBase64}`,
+                  },
+                },
+              ],
+            },
+          ],
+          model: "meta-llama/llama-4-scout-17b-16e-instruct",
+          temperature: 0,
+          response_format: { type: "json_object" },
+        });
+
+        const textResponse = result.choices[0]?.message?.content || "";
+        const parsed = JSON.parse(textResponse);
+        const validated = bankMutationSchema.parse(parsed);
+
+        if (!validated.success || validated.transactions.length === 0) {
+          return {
+            success: false as const,
+            transactions: [],
+            error: "Tidak ada transaksi terdeteksi dari gambar",
+          };
+        }
+
+        return {
+          success: true as const,
+          transactions: validated.transactions,
+        };
+      } catch (error) {
+        console.error("Groq Bank Mutation error:", error);
+        return {
+          success: false as const,
+          transactions: [],
+          error: "Gagal memindai mutasi rekening",
         };
       }
     }),
