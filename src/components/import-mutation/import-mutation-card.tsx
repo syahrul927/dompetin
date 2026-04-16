@@ -1,17 +1,19 @@
 "use client";
 
 import React from "react";
-import { Card } from "@/components/ui/card";
 import { useImportMutation, type ParsedTransaction } from "./import-mutation-context";
 import { DEFAULT_CATEGORIES } from "@/lib/default-categories";
-import { ArrowUpCircle, ArrowDownCircle, Check, AlertTriangle, X } from "lucide-react";
-import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
+import { getCategoryIcon } from "@/lib/category-icons";
+import { Check, AlertTriangle, X, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-function getCategoryName(categoryKey: string): string {
+function getCategoryInfo(categoryKey: string) {
   const cat = DEFAULT_CATEGORIES.find((c) => c.key === categoryKey);
-  return cat?.name ?? "Lainnya";
+  return {
+    name: cat?.name ?? "Lainnya",
+    icon: cat?.icon ?? "tag",
+    color: cat?.color ?? "#6b7280",
+  };
 }
 
 function isLainnya(categoryKey: string): boolean {
@@ -27,8 +29,9 @@ export function ImportMutationCard({ transaction, onEdit }: ImportMutationCardPr
   const { isValid, dispatch } = useImportMutation();
   const valid = isValid(transaction);
   const isIncome = transaction.type === "income";
-  const categoryName = getCategoryName(transaction.categoryKey);
+  const category = getCategoryInfo(transaction.categoryKey);
   const isFallback = isLainnya(transaction.categoryKey);
+  const CategoryIcon = getCategoryIcon(category.icon);
 
   const handleRemove = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -36,69 +39,79 @@ export function ImportMutationCard({ transaction, onEdit }: ImportMutationCardPr
   };
 
   return (
-    <Card
+    <div
       className={cn(
-        "relative cursor-pointer rounded-[20px] border p-4 transition-colors active:bg-muted/50",
-        isIncome ? "border-l-4 border-l-emerald-500" : "border-l-4 border-l-red-500"
+        "group relative flex items-center gap-3 rounded-2xl border bg-card p-3.5 transition-all active:scale-[0.98] active:bg-muted/50",
+        !valid && "border-amber-500/30 bg-amber-50/50 dark:bg-amber-500/5",
       )}
       onClick={() => onEdit(transaction)}
     >
+      {/* Remove button */}
       <button
         onClick={handleRemove}
-        className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted active:bg-muted/80"
+        className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-muted text-muted-foreground opacity-0 shadow-sm transition-all group-hover:opacity-100 group-active:opacity-100 hover:bg-destructive hover:text-destructive-foreground"
       >
-        <X size={14} />
+        <X size={12} />
       </button>
 
-      <div className="flex items-start gap-3 pr-6">
-        <div className={cn(
-          "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
-          isIncome ? "bg-emerald-500/10" : "bg-red-500/10"
-        )}>
-          {isIncome ? (
-            <ArrowDownCircle size={18} className="text-emerald-500" />
-          ) : (
-            <ArrowUpCircle size={18} className="text-red-500" />
-          )}
-        </div>
+      {/* Category icon */}
+      <div
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+        style={{ backgroundColor: `${category.color}15` }}
+      >
+        <CategoryIcon size={18} style={{ color: category.color }} />
+      </div>
 
-        <div className="flex flex-1 flex-col gap-0.5">
-          <span className="text-sm font-medium leading-tight line-clamp-1">
-            {transaction.name || "Tanpa nama"}
+      {/* Content */}
+      <div className="flex flex-1 flex-col gap-0.5 min-w-0">
+        <span className="text-sm font-medium leading-tight truncate">
+          {transaction.name || "Tanpa nama"}
+        </span>
+        <div className="flex items-center gap-1.5">
+          <span
+            className={cn(
+              "text-[11px] font-medium",
+              isFallback ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground",
+            )}
+          >
+            {category.name}
           </span>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground">
-              {transaction.date
-                ? format(new Date(transaction.date + "T00:00:00"), "dd MMM yyyy", { locale: idLocale })
-                : "Tanggal tidak diketahui"}
-            </span>
-            <span className="text-[10px] text-muted-foreground">·</span>
-            <span className={cn(
-              "text-[10px] font-medium",
-              isFallback ? "text-amber-500" : "text-muted-foreground"
-            )}>
-              {categoryName}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex flex-col items-end gap-1">
-          <span className={cn(
-            "text-sm font-semibold",
-            isIncome ? "text-emerald-500" : "text-red-500"
-          )}>
-            {isIncome ? "+" : "-"}Rp {(transaction.amount).toLocaleString("id-ID")}
+          <span className="text-[9px] text-muted-foreground/50">·</span>
+          <span className="text-[11px] text-muted-foreground">
+            {transaction.date
+              ? new Date(transaction.date + "T00:00:00").toLocaleDateString("id-ID", {
+                  day: "numeric",
+                  month: "short",
+                })
+              : "Tanggal ?"}
           </span>
-          {valid ? (
-            <Check size={14} className="text-emerald-500" />
-          ) : (
-            <div className="flex items-center gap-0.5">
-              <AlertTriangle size={12} className="text-amber-500" />
-              <span className="text-[10px] text-amber-500">Lengkapi</span>
-            </div>
-          )}
         </div>
       </div>
-    </Card>
+
+      {/* Amount & status */}
+      <div className="flex flex-col items-end gap-1 shrink-0">
+        <span
+          className={cn(
+            "text-sm font-bold tabular-nums",
+            isIncome ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400",
+          )}
+        >
+          {isIncome ? "+" : "-"}Rp {transaction.amount.toLocaleString("id-ID")}
+        </span>
+        {valid ? (
+          <Check size={13} className="text-emerald-500" />
+        ) : (
+          <div className="flex items-center gap-0.5">
+            <AlertTriangle size={11} className="text-amber-500" />
+            <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">
+              Lengkapi
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Chevron */}
+      <ChevronRight size={16} className="shrink-0 text-muted-foreground/40" />
+    </div>
   );
 }

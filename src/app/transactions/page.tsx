@@ -5,11 +5,10 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card } from "@/components/ui/card";
 import { TransactionRow } from "@/components/shared/TransactionRow";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
 import { useActiveWorkspace } from "@/components/providers/workspace-provider";
 import { authClient } from "@/server/better-auth/client";
 import { api } from "@/trpc/react";
-import { Loader2, Calendar } from "lucide-react";
+import { Calendar } from "lucide-react";
 import { TransactionActionSheet } from "@/components/transaction/TransactionActionSheet";
 import { TransactionManager } from "@/components/transaction/TransactionManager";
 import { getWalletContext } from "@/lib/transaction-helpers";
@@ -23,8 +22,6 @@ import {
 } from "@/components/ui/select";
 import { TransactionAnalytics } from "@/components/transaction/TransactionAnalytics";
 import { ExpenseCategoryChart } from "@/components/dashboard/ExpenseCategoryChart";
-
-const PAGE_SIZE = 20;
 
 const MONTHS = [
   { value: "1", label: "Januari" },
@@ -75,7 +72,6 @@ export default function TransactionsPage() {
   const now = new Date();
   const [month, setMonth] = useState(now.getUTCMonth() + 1);
   const [year, setYear] = useState(now.getUTCFullYear());
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   // Sheets state
   const [actionTx, setActionTx] = useState<Record<string, unknown> | null>(
@@ -84,7 +80,7 @@ export default function TransactionsPage() {
   const [editTx, setEditTx] = useState<Record<string, unknown> | null>(null);
 
   const { data, isLoading: isLoadingTransactions } = api.transaction.getTransactions.useQuery(
-    { workspaceId, month, year, limit: 1000, offset: 0 },
+    { workspaceId, month, year },
     { enabled: !!workspaceId },
   );
 
@@ -99,8 +95,6 @@ export default function TransactionsPage() {
   );
 
   const allTransactions = data?.transactions ?? [];
-  const hasMore = data?.hasMore ?? false;
-  const transactions = allTransactions.slice(0, visibleCount);
 
   // Transform API transactions to TransactionRow format
   const transformedTransactions = allTransactions.map((tx) => {
@@ -159,7 +153,6 @@ export default function TransactionsPage() {
             onValueChange={(val) => {
               const m = parseInt(val);
               setMonth(m);
-              setVisibleCount(PAGE_SIZE);
               trackEvent("transactions_filter_month_changed", { month: m });
             }}
           >
@@ -181,7 +174,6 @@ export default function TransactionsPage() {
             onValueChange={(val) => {
               const y = parseInt(val);
               setYear(y);
-              setVisibleCount(PAGE_SIZE);
               trackEvent("transactions_filter_year_changed", { year: y });
             }}
           >
@@ -276,29 +268,6 @@ export default function TransactionsPage() {
                 </div>
               );
             })}
-
-            {/* Load More */}
-            {visibleCount < allTransactions.length && (
-              <div className="flex justify-center pt-2">
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    const nextCount = visibleCount + PAGE_SIZE;
-                    setVisibleCount(nextCount);
-                    trackEvent("transactions_load_more_clicked", {
-                      current_limit: nextCount,
-                    });
-                  }}
-                  className="text-primary text-sm font-medium h-10 rounded-full hover:bg-primary/5"
-                >
-                  <Loader2
-                    size={16}
-                    className={`mr-2 ${isLoadingTransactions ? "animate-spin" : "hidden"}`}
-                  />
-                  Muat Lebih Banyak
-                </Button>
-              </div>
-            )}
           </div>
         )}
       </div>

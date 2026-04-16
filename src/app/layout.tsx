@@ -118,7 +118,7 @@ export default function RootLayout({
                 {children}
                 <InstallPrompt />
                 <OfflineIndicator />
-                {env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && env.NEXT_PUBLIC_UMAMI_URL && (
+                {process.env.NODE_ENV === "production" && env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && env.NEXT_PUBLIC_UMAMI_URL && (
                   <Script
                     defer
                     src={`${env.NEXT_PUBLIC_UMAMI_URL}/script.js`}

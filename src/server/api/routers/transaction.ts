@@ -30,8 +30,7 @@ export const transactionRouter = {
         endDate: z.string().datetime().optional(),
         month: z.number().min(1).max(12).optional(),
         year: z.number().min(2000).optional(),
-        limit: z.number().min(1).max(100).default(20),
-        offset: z.number().min(0).default(0),
+        limit: z.number().min(1).max(100).optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -116,12 +115,11 @@ export const transactionRouter = {
         conditions.push(lte(transaction.date, endOfMonth));
       }
 
-      // Fetch transactions with pagination
+      // Fetch transactions (optional limit for consumers like dashboard that only need recent ones)
       const transactions = await db.query.transaction.findMany({
         where: and(...conditions),
         orderBy: [desc(transaction.date), desc(transaction.createdAt)],
-        limit: input.limit,
-        offset: input.offset,
+        ...(input.limit ? { limit: input.limit } : {}),
         with: {
           wallet: {
             columns: {
@@ -267,7 +265,6 @@ export const transactionRouter = {
 
       return {
         transactions: groupedTransactions,
-        hasMore: transactions.length === input.limit,
       };
     }),
 
