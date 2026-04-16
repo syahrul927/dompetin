@@ -3,25 +3,37 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Wallet } from "lucide-react";
 import { ImportMutationCard } from "@/components/import-mutation/import-mutation-card";
 import {
   useImportMutation,
   type ParsedTransaction,
 } from "@/components/import-mutation/import-mutation-context";
 import { AddTransactionSheet } from "@/components/transaction/AddTransactionSheet";
+import { WalletSelectDrawer } from "@/components/transaction/WalletSelectDrawer";
 import { useActiveWorkspace } from "@/components/providers/workspace-provider";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export default function ImportMutationPage() {
   const router = useRouter();
   const { workspaceId } = useActiveWorkspace();
   const { state, dispatch, allValid } = useImportMutation();
   const [editingItem, setEditingItem] = useState<ParsedTransaction | null>(null);
+  const [selectedWalletId, setSelectedWalletId] = useState("");
 
   const createBulk = api.transaction.createBulkTransactions.useMutation();
+  const resolveCategory = api.category.resolveCategory.useMutation();
   const utils = api.useUtils();
+
+  // Fetch wallets for display name
+  const { data: wallets } = api.wallet.getWallets.useQuery(
+    { workspaceId },
+    { enabled: !!workspaceId },
+  );
+
+  const selectedWalletName = wallets?.find((w) => w.id === selectedWalletId)?.name;
 
   // Load parsed transactions from sessionStorage (set by TransactionManager)
   useEffect(() => {
@@ -38,7 +50,7 @@ export default function ImportMutationPage() {
   }, [dispatch]);
 
   const transactions = state.transactions;
-  const canSave = allValid() && !createBulk.isPending;
+  const canSave = !!selectedWalletId && allValid() && !createBulk.isPending;
 
   const handleEdit = (item: ParsedTransaction) => {
     setEditingItem(item);
@@ -56,8 +68,6 @@ export default function ImportMutationPage() {
         type: (updatedData.type as "income" | "expense") || editingItem.type,
         date: (updatedData.date as string) || editingItem.date,
         notes: (updatedData.notes as string) ?? editingItem.notes,
-        walletId: (updatedData.wallet as { id: string })?.id || (updatedData.walletId as string | undefined),
-        categoryId: (updatedData.category as { id: string })?.id || (updatedData.categoryId as string | undefined),
       },
     });
     setEditingItem(null);
@@ -66,17 +76,31 @@ export default function ImportMutationPage() {
   const handleSaveAll = async () => {
     if (!canSave || !workspaceId) return;
 
-    const bulkInput = transactions.map((t) => ({
-      type: t.type,
-      amount: t.amount * 100, // Convert to cents
-      name: t.name.trim(),
-      notes: t.notes || undefined,
-      date: new Date(t.date + "T00:00:00Z").toISOString(),
-      walletId: t.walletId!,
-      categoryId: t.categoryId!,
-    }));
-
     try {
+      // Resolve all unique categoryKeys to real DB categoryIds
+      const uniqueKeys = [...new Set(transactions.map((t) => t.categoryKey))];
+      const categoryMap = new Map<string, string>();
+
+      for (const key of uniqueKeys) {
+        const prefixedId = `default:${key}`;
+        const resolved = await resolveCategory.mutateAsync({
+          categoryId: prefixedId,
+          workspaceId,
+        });
+        categoryMap.set(key, resolved.id);
+      }
+
+      // Build bulk input
+      const bulkInput = transactions.map((t) => ({
+        type: t.type,
+        amount: t.amount * 100, // Convert to cents
+        name: t.name.trim(),
+        notes: t.notes || undefined,
+        date: new Date(t.date + "T00:00:00Z").toISOString(),
+        walletId: selectedWalletId,
+        categoryId: categoryMap.get(t.categoryKey)!,
+      }));
+
       const result = await createBulk.mutateAsync({
         transactions: bulkInput,
         workspaceId,
@@ -101,8 +125,10 @@ export default function ImportMutationPage() {
   const drawerInitialData = editingItem
     ? {
         ...editingItem,
-        wallet: editingItem.walletId ? { id: editingItem.walletId } : null,
-        category: editingItem.categoryId ? { id: editingItem.categoryId } : null,
+        wallet: selectedWalletId ? { id: selectedWalletId } : null,
+        category: editingItem.categoryKey
+          ? { id: `default:${editingItem.categoryKey}` }
+          : null,
       }
     : null;
 
@@ -126,6 +152,43 @@ export default function ImportMutationPage() {
 
       {/* Transaction List */}
       <div className="flex-1 overflow-y-auto px-5 py-4 pb-28">
+        {/* Global Wallet Selector */}
+        {transactions.length > 0 && (
+          <div className="mb-4">
+            <WalletSelectDrawer
+              value={selectedWalletId}
+              onChange={setSelectedWalletId}
+              workspaceId={workspaceId}
+            >
+              <div className={cn(
+                "flex items-center gap-3 rounded-[16px] border p-3 transition-colors",
+                !selectedWalletId ? "border-amber-500/50 bg-amber-500/5" : "border-border"
+              )}>
+                <div className={cn(
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
+                  !selectedWalletId ? "bg-amber-500/10" : "bg-muted"
+                )}>
+                  <Wallet size={18} className={!selectedWalletId ? "text-amber-500" : "text-muted-foreground"} />
+                </div>
+                <div className="flex flex-col">
+                  <span className={cn(
+                    "text-xs font-medium",
+                    !selectedWalletId ? "text-amber-500" : "text-muted-foreground"
+                  )}>
+                    Sumber Dompet
+                  </span>
+                  <span className={cn(
+                    "text-sm",
+                    !selectedWalletId ? "text-amber-600 font-medium" : "font-medium"
+                  )}>
+                    {selectedWalletName || "Pilih dompet sumber"}
+                  </span>
+                </div>
+              </div>
+            </WalletSelectDrawer>
+          </div>
+        )}
+
         {transactions.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 py-20 text-muted-foreground">
             <span className="text-sm">Tidak ada transaksi untuk diimpor</span>
