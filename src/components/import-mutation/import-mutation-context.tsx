@@ -8,9 +8,8 @@ export interface ParsedTransaction {
   amount: number;
   date: string; // YYYY-MM-DD
   type: "income" | "expense";
+  categoryKey: string; // DEFAULT_CATEGORIES key, e.g. "makanan-minuman"
   notes: string;
-  walletId?: string;
-  categoryId?: string;
 }
 
 interface ImportMutationState {
@@ -51,9 +50,9 @@ function importMutationReducer(
 interface ImportMutationContextType {
   state: ImportMutationState;
   dispatch: React.Dispatch<ImportMutationAction>;
-  /** Check if a transaction has all required fields for saving */
+  /** Check if a single transaction has all required fields */
   isValid: (t: ParsedTransaction) => boolean;
-  /** Check if ALL transactions are valid (for enabling the save button) */
+  /** Check if ALL transactions are valid */
   allValid: () => boolean;
 }
 
@@ -63,7 +62,7 @@ export function ImportMutationProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(importMutationReducer, initialState);
 
   const isValid = (t: ParsedTransaction): boolean =>
-    !!t.walletId && !!t.categoryId && t.amount > 0 && t.name.trim().length > 0;
+    !!t.categoryKey && t.amount > 0 && t.name.trim().length > 0;
 
   const allValid = (): boolean =>
     state.transactions.length > 0 && state.transactions.every(isValid);
