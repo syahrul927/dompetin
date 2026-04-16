@@ -8,6 +8,7 @@ import { AddTransactionSheet } from "./AddTransactionSheet";
 import { api } from "@/trpc/react";
 import { compressImage } from "@/lib/image";
 import { useAnalytics } from "@/hooks/use-analytics";
+import { DEFAULT_CATEGORIES } from "@/lib/default-categories";
 
 interface TransactionManagerProps {
   open: boolean;
@@ -77,14 +78,17 @@ export function TransactionManager({
       const result = await scanBankMutation.mutateAsync({
         imageBase64: compressedBase64,
         mimeType: file.type || "image/jpeg",
+        availableCategories: DEFAULT_CATEGORIES.map((c) => ({
+          key: c.key,
+          name: c.name,
+          type: c.type,
+        })),
       });
 
       if (result.success && result.transactions.length > 0) {
         const importData = result.transactions.map((t) => ({
           ...t,
           id: crypto.randomUUID(),
-          walletId: undefined,
-          categoryId: undefined,
         }));
         sessionStorage.setItem("importMutationData", JSON.stringify(importData));
         onOpenChange(false);
