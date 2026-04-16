@@ -3,10 +3,20 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { useImportMutation, type ParsedTransaction } from "./import-mutation-context";
+import { DEFAULT_CATEGORIES } from "@/lib/default-categories";
 import { ArrowUpCircle, ArrowDownCircle, Check, AlertTriangle, X } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+
+function getCategoryName(categoryKey: string): string {
+  const cat = DEFAULT_CATEGORIES.find((c) => c.key === categoryKey);
+  return cat?.name ?? "Lainnya";
+}
+
+function isLainnya(categoryKey: string): boolean {
+  return categoryKey === "lainnya-expense" || categoryKey === "lainnya-income";
+}
 
 interface ImportMutationCardProps {
   transaction: ParsedTransaction;
@@ -17,6 +27,8 @@ export function ImportMutationCard({ transaction, onEdit }: ImportMutationCardPr
   const { isValid, dispatch } = useImportMutation();
   const valid = isValid(transaction);
   const isIncome = transaction.type === "income";
+  const categoryName = getCategoryName(transaction.categoryKey);
+  const isFallback = isLainnya(transaction.categoryKey);
 
   const handleRemove = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -54,11 +66,20 @@ export function ImportMutationCard({ transaction, onEdit }: ImportMutationCardPr
           <span className="text-sm font-medium leading-tight line-clamp-1">
             {transaction.name || "Tanpa nama"}
           </span>
-          <span className="text-xs text-muted-foreground">
-            {transaction.date
-              ? format(new Date(transaction.date + "T00:00:00"), "dd MMM yyyy", { locale: idLocale })
-              : "Tanggal tidak diketahui"}
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-muted-foreground">
+              {transaction.date
+                ? format(new Date(transaction.date + "T00:00:00"), "dd MMM yyyy", { locale: idLocale })
+                : "Tanggal tidak diketahui"}
+            </span>
+            <span className="text-[10px] text-muted-foreground">·</span>
+            <span className={cn(
+              "text-[10px] font-medium",
+              isFallback ? "text-amber-500" : "text-muted-foreground"
+            )}>
+              {categoryName}
+            </span>
+          </div>
         </div>
 
         <div className="flex flex-col items-end gap-1">
