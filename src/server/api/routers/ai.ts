@@ -43,6 +43,7 @@ const bankMutationTransactionSchema = z.object({
   amount: z.number(),
   date: z.string(),
   type: z.enum(["income", "expense"]),
+  categoryKey: z.string(),
   notes: z.string(),
 });
 
@@ -266,10 +267,21 @@ export const aiRouter = createTRPCRouter({
       z.object({
         imageBase64: z.string(),
         mimeType: z.string(),
+        availableCategories: z.array(
+          z.object({
+            key: z.string(),
+            name: z.string(),
+            type: z.string(),
+          }),
+        ),
       }),
     )
     .mutation(async ({ input }) => {
       const groq = new Groq({ apiKey: env.GROQ_API_KEY });
+
+      const categoryList = input.availableCategories
+        .map((c) => `- "${c.key}" (${c.name}, ${c.type})`)
+        .join("\n");
 
       const systemPrompt = `You are a bank/e-wallet mutation statement parser for an Indonesian personal finance app.
 Analyze the provided image of a bank or e-wallet mutation/history screenshot and extract ALL transaction rows.
@@ -283,6 +295,7 @@ You must output strict JSON matching this exact schema:
       "amount": number,
       "date": "YYYY-MM-DD",
       "type": "income" | "expense",
+      "categoryKey": string,
       "notes": string
     }
   ]
@@ -312,13 +325,19 @@ CRITICAL - Indonesian Number Format:
 - Keywords for "expense": DB, Debit, Keluar, Bayar, Beli, Pembayaran, Tarik, Transfer
 - If ambiguous, default to "expense".
 
-6. "notes": Include any additional details like reference numbers, transaction IDs, or remarks visible on the row. If none, use empty string "".
+6. "categoryKey": Map each transaction to the BEST matching category from this list. Use the "key" value exactly as provided.
+${categoryList}
 
-7. SKIP: header rows, "SALDO" / "BALANCE" rows, date-only rows with no transaction, and rows that are clearly not transactions.
+For expense transactions, only use keys where type is "expense". For income transactions, only use keys where type is "income".
+If you cannot find a good match, use "lainnya-expense" for expenses or "lainnya-income" for income.
 
-8. The image may come from: BCA, BRI, Mandiri, BNI, CIMB, Permata, Danamon, GoPay, OVO, DANA, ShopeePay, LinkAja, or any other Indonesian bank/e-wallet app.
+7. "notes": Include any additional details like reference numbers, transaction IDs, or remarks visible on the row. If none, use empty string "".
 
-9. If the image is not a readable mutation/bank statement, set success to false and transactions to empty array.`;
+8. SKIP: header rows, "SALDO" / "BALANCE" rows, date-only rows with no transaction, and rows that are clearly not transactions.
+
+9. The image may come from: BCA, BRI, Mandiri, BNI, CIMB, Permata, Danamon, GoPay, OVO, DANA, ShopeePay, LinkAja, or any other Indonesian bank/e-wallet app.
+
+10. If the image is not a readable mutation/bank statement, set success to false and transactions to empty array.`;
 
       try {
         const result = await groq.chat.completions.create({
