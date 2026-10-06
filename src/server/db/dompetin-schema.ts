@@ -178,7 +178,10 @@ export const webhook = pgTable(
       .$defaultFn(() => new Date())
       .notNull(),
   },
-  (table) => [uniqueIndex("webhook_key_hash_idx").on(table.keyHash)],
+  (table) => [
+    uniqueIndex("webhook_key_hash_idx").on(table.keyHash),
+    uniqueIndex("webhook_user_workspace_idx").on(table.workspaceId, table.userId),
+  ],
 );
 
 // Wallets

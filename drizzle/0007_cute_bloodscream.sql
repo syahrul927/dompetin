@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "webhook_user_workspace_idx" ON "dompetin_webhook" USING btree ("workspace_id","user_id");
