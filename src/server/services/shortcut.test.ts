@@ -1,7 +1,8 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
 import {
   buildShortcutPrompt,
   validateShortcutResult,
+  parseExpenseMessage,
 } from "./shortcut";
 
 const wallets = [
@@ -82,6 +83,60 @@ describe("validateShortcutResult", () => {
     if (result.ok) expect(result.value.walletId).toBe("w-blu");
   });
 
+  it("matches wallet by bidirectional substring of walletId", () => {
+    const result = validateShortcutResult(
+      {
+        name: "X",
+        amount: 1000,
+        date: "2026-09-20",
+        walletId: "blu",
+        categoryId: "default:belanja",
+        notes: "",
+      },
+      wallets,
+      categories,
+      today,
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.walletId).toBe("w-blu");
+  });
+
+  it("does not match wallets with walletId shorter than 3 chars", () => {
+    const result = validateShortcutResult(
+      {
+        name: "X",
+        amount: 1000,
+        date: "2026-09-20",
+        walletId: "a",
+        categoryId: "default:belanja",
+        notes: "",
+      },
+      wallets,
+      categories,
+      today,
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.walletId).toBe("w-blu");
+  });
+
+  it("falls back to first wallet when walletId is null", () => {
+    const result = validateShortcutResult(
+      {
+        name: "X",
+        amount: 1000,
+        date: "2026-09-20",
+        walletId: null,
+        categoryId: "default:belanja",
+        notes: "",
+      },
+      wallets,
+      categories,
+      today,
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.walletId).toBe("w-blu");
+  });
+
   it("falls back to lainnya category when categoryId is unknown", () => {
     const result = validateShortcutResult(
       {
@@ -150,5 +205,81 @@ describe("validateShortcutResult", () => {
         today,
       ).ok,
     ).toBe(false);
+  });
+});
+
+describe("parseExpenseMessage", () => {
+  const today = "2026-10-06";
+  const realDateNow = Date.now;
+
+  // Freeze the clock so the "today" fallback inside parseExpenseMessage is
+  // deterministic if a test ever reaches it.
+  beforeAll(() => {
+    vi.setSystemTime(new Date(`${today}T00:00:00Z`));
+  });
+  afterAll(() => {
+    vi.useRealTimers();
+    Date.now = realDateNow;
+  });
+
+  function makeMockClient(content: unknown) {
+    const create = vi.fn().mockResolvedValue(content);
+    return {
+      client: { chat: { completions: { create } } },
+      create,
+    };
+  }
+
+  it("returns null when the model emits non-JSON prose", async () => {
+    const { client } = makeMockClient({
+      choices: [{ message: { content: "Sorry, I cannot parse that." } }],
+    });
+    const result = await parseExpenseMessage(client, "ocr text", wallets, categories);
+    expect(result).toBeNull();
+  });
+
+  it("returns null when choices[0].message.content is missing", async () => {
+    const { client } = makeMockClient({ choices: [] });
+    const result = await parseExpenseMessage(client, "ocr text", wallets, categories);
+    expect(result).toBeNull();
+  });
+
+  it("parses valid AI JSON through validation", async () => {
+    const aiJson = JSON.stringify({
+      name: "RUNPOD.IO",
+      amount: 362304,
+      date: "2026-09-20",
+      walletId: "w-blu",
+      categoryId: "default:belanja",
+      notes: "ref 0920",
+    });
+    const { client } = makeMockClient({
+      choices: [{ message: { content: aiJson } }],
+    });
+    const result = await parseExpenseMessage(client, "ocr text", wallets, categories);
+    expect(result).toEqual({
+      name: "RUNPOD.IO",
+      amount: 362304,
+      date: "2026-09-20",
+      walletId: "w-blu",
+      categoryId: "default:belanja",
+      notes: "ref 0920",
+    });
+  });
+
+  it("sends the locked Groq call parameters", async () => {
+    const aiJson = JSON.stringify({
+      name: "X", amount: 1000, date: null, walletId: "w-blu", categoryId: null, notes: "",
+    });
+    const { client, create } = makeMockClient({
+      choices: [{ message: { content: aiJson } }],
+    });
+    await parseExpenseMessage(client, "ocr text", wallets, categories);
+    expect(create).toHaveBeenCalledTimes(1);
+    const firstCall = create.mock.calls[0]! as unknown as [Record<string, unknown>];
+    const opts = firstCall[0];
+    expect(opts.model).toBe("openai/gpt-oss-120b");
+    expect(opts.temperature).toBe(0);
+    expect(opts.response_format).toEqual({ type: "json_object" });
   });
 });

@@ -107,17 +107,17 @@ export function validateShortcutResult(
   const date =
     raw.date && /^\d{4}-\d{2}-\d{2}$/.test(raw.date) ? raw.date : today;
 
-  // Wallet: exact id, else closest name substring, else first wallet
-  const nameLower = raw.name.toLowerCase();
+  // Wallet: exact id, else bidirectional substring match of raw.walletId
+  // against wallet names (min length 3 to avoid garbage matches), else first wallet
   const walletById = wallets.find((w) => w.id === raw.walletId);
-  const walletByName = walletById
-    ? undefined
-    : wallets.find(
-        (w) =>
-          raw.walletId != null &&
-          (nameLower.includes(w.name.toLowerCase()) ||
-            w.name.toLowerCase().includes(raw.walletId.toLowerCase())),
-      );
+  const walletByName =
+    walletById || !raw.walletId || raw.walletId.length < 3
+      ? undefined
+      : wallets.find((w) => {
+          const needle = raw.walletId!.toLowerCase();
+          const name = w.name.toLowerCase();
+          return name.includes(needle) || needle.includes(name);
+        });
   const wallet = walletById ?? walletByName ?? wallets[0];
 
   // Category: exact id, else lainnya (or first category)
