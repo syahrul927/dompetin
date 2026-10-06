@@ -88,7 +88,7 @@ Errors:
 |---|---|---|
 | 400 | missing/oversized/invalid body | `{ success: false, error }` |
 | 401 | missing/unknown secret key | `{ success: false, error }` |
-| 422 | Groq failed or text unparseable | `{ success: false, error }` |
+| 422 | Groq failed, text unparseable, or workspace has no wallets configured | `{ success: false, error }` |
 | 429 | rate limit exceeded | `{ success: false, error }` |
 
 ## AI Parsing Service
@@ -162,10 +162,10 @@ New "Integrasi / Webhook" section in workspace settings:
 ## Testing
 
 - Unit: key hashing/verification; zod output validation and fallback logic in the
-  service.
-- Integration (Groq mocked): happy path 201 with transaction + URL; unknown key 401;
-  oversized body 400; rate limit 429; unknown walletId/categoryId fallback; Groq
-  failure 422.
+  service; rate limiter; prompt builder.
+- Route-level integration tests (Groq mocked: 201/401/400/429/422) were scoped out;
+  the route's status codes and the atomic insert+decrement are verified manually
+  instead (see Manual below).
 - Manual: user's real OCR samples — blu BCA (`RUNPOD.IO`, USD nominal → Rp 362304,
   wallet = blu, category Shopping) and Mandiri livin (transfer to MOCHAMAD SOLEH,
   Rp 300000, wallet = Mandiri).
