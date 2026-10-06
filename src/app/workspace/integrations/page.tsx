@@ -96,7 +96,7 @@ export default function IntegrationsPage() {
     `curl -X POST ${webhookUrl} \\`,
     `  -H "secret-key: ${shownKey ?? ""}" \\`,
     `  -H "Content-Type: application/json" \\`,
-    `  -d '{"message": "Transfer Berhasil Rp 300.000 ke MOCHAMAD SOLEH"}'`,
+    `  -d '{"message": "Transfer Berhasil Rp 300.000 ke NAMA PENERIMA"}'`,
   ].join("\n");
 
   return (
@@ -264,6 +264,7 @@ export default function IntegrationsPage() {
             <AlertDialogFooter>
               <AlertDialogCancel>Batal</AlertDialogCancel>
               <AlertDialogAction
+                disabled={regenerateMutation.isPending}
                 onClick={() =>
                   activeWebhook &&
                   regenerateMutation.mutate({ id: activeWebhook.id })
@@ -292,6 +293,7 @@ export default function IntegrationsPage() {
               <AlertDialogCancel>Batal</AlertDialogCancel>
               <AlertDialogAction
                 variant="destructive"
+                disabled={revokeMutation.isPending}
                 onClick={() =>
                   activeWebhook && revokeMutation.mutate({ id: activeWebhook.id })
                 }
