@@ -94,8 +94,9 @@ Errors:
 ## AI Parsing Service
 
 `src/server/services/shortcut.ts`. Groq chat completion, model
-`meta-llama/llama-4-scout-17b-16e-instruct`, temperature 0, JSON response format
-(same settings as existing AI features in `src/server/api/routers/ai.ts`).
+`openai/gpt-oss-120b`, temperature 0, JSON response format. Validated live
+against the real OCR samples — the previously used
+`meta-llama/llama-4-scout-17b-16e-instruct` has been retired by Groq.
 
 Prompt input: raw OCR text + wallet list (id, name, type) + expense category list
 (id, name).
