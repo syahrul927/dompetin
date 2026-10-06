@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -134,6 +134,7 @@ function TransactionsPageContent() {
 
   const searchParams = useSearchParams();
   const deepLinkTxId = searchParams.get("tx");
+  const deepLinkHandled = useRef(false);
 
   // Deep link: /transactions?tx=<id> opens the summary drawer for that transaction
   const { data: deepLinkTx } = api.transaction.getTransaction.useQuery(
@@ -142,8 +143,10 @@ function TransactionsPageContent() {
   );
 
   useEffect(() => {
-    if (!deepLinkTxId || !deepLinkTx) return;
-    setActionTx(transformTransaction(deepLinkTx));
+    if (!deepLinkTxId || !deepLinkTx || deepLinkHandled.current) return;
+    deepLinkHandled.current = true;
+    // Don't clobber a drawer the user opened while the deep-link fetch was in flight
+    setActionTx((prev) => prev ?? transformTransaction(deepLinkTx));
     // Clean the URL so refresh/back doesn't re-open the drawer
     window.history.replaceState(null, "", "/transactions");
   }, [deepLinkTxId, deepLinkTx]);
