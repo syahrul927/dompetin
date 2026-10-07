@@ -174,7 +174,9 @@ export default function IntegrationsPage() {
                 ditutup.
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-2 text-xs">
+            {/* min-w-0: lets the grid track shrink so the cURL pre scrolls
+                instead of overflowing the dialog on narrow screens */}
+            <div className="min-w-0 space-y-2 text-xs">
               {/* Full webhook URL row + copy button */}
               <div className="flex items-center gap-2">
                 <code className="flex-1 truncate rounded bg-secondary px-2 py-1.5">
