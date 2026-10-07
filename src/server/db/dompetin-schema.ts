@@ -6,6 +6,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   varchar,
 } from "drizzle-orm/pg-core";
 import { date, numeric, uuid as uuidColumn } from "drizzle-orm/pg-core";
@@ -155,6 +156,33 @@ export const invitation = pgTable("dompetin_invitation", {
     .$defaultFn(() => new Date())
     .notNull(),
 });
+
+// Webhook integrations (per user per workspace, e.g. iOS Shortcut)
+export const webhook = pgTable(
+  "dompetin_webhook",
+  {
+    id: uuidColumn("id").primaryKey().defaultRandom(),
+    workspaceId: uuidColumn("workspace_id")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 255 }).notNull(),
+    keyHash: text("key_hash").notNull(),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .$defaultFn(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("webhook_key_hash_idx").on(table.keyHash),
+    uniqueIndex("webhook_user_workspace_idx").on(table.workspaceId, table.userId),
+  ],
+);
 
 // Wallets
 export const wallet = pgTable("dompetin_wallet", {

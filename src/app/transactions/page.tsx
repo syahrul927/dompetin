@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card } from "@/components/ui/card";
 import { TransactionRow } from "@/components/shared/TransactionRow";
@@ -64,7 +65,59 @@ function formatGroupDate(date: Date | string): string {
   });
 }
 
-export default function TransactionsPage() {
+/**
+ * Minimal shape shared by `transaction.getTransactions` rows and the
+ * `transaction.getTransaction` row (same relation columns; grouped transfers
+ * additionally carry a virtual `feeAmount`).
+ */
+type TransactionLike = {
+  id: string;
+  name: string;
+  type: string;
+  amount: string;
+  date: Date | string;
+  wallet: { id: string; name: string } | null;
+  toWallet: { id: string; name: string } | null;
+  category: { name: string; icon: string; color: string } | null;
+  createdBy: { name: string; image: string | null } | null;
+  feeAmount?: number;
+};
+
+/**
+ * Map an API transaction to the row shape consumed by TransactionRow and
+ * TransactionActionSheet. Shared by the list mapping and the ?tx= deep link
+ * so the summary drawer looks identical either way.
+ */
+function transformTransaction(tx: TransactionLike) {
+  const amount = Math.abs(parseFloat(tx.amount));
+  let type: "income" | "expense" | "transfer_debit" | "transfer_credit";
+
+  if (tx.type === "transfer") {
+    type = parseFloat(tx.amount) < 0 ? "transfer_debit" : "transfer_credit";
+  } else {
+    type = tx.type as "income" | "expense";
+  }
+
+  return {
+    id: tx.id,
+    name: tx.name,
+    category:
+      tx.category?.name ?? (tx.type === "transfer" ? "Transfer" : "Lainnya"),
+    categoryIcon: tx.category?.icon,
+    categoryColor: tx.category?.color,
+    date: formatTransactionDate(tx.date),
+    rawDate: new Date(tx.date),
+    amount,
+    feeAmount: tx.feeAmount,
+    type,
+    walletContext: getWalletContext(tx.type, tx.wallet, tx.toWallet),
+    authorName: tx.createdBy?.name,
+    createdBy: tx.createdBy,
+    raw: tx,
+  };
+}
+
+function TransactionsPageContent() {
   const { workspaceId } = useActiveWorkspace();
   const { data: session } = authClient.useSession();
   const { trackEvent } = useAnalytics();
@@ -78,6 +131,25 @@ export default function TransactionsPage() {
     null,
   );
   const [editTx, setEditTx] = useState<Record<string, unknown> | null>(null);
+
+  const searchParams = useSearchParams();
+  const deepLinkTxId = searchParams.get("tx");
+  const deepLinkHandled = useRef(false);
+
+  // Deep link: /transactions?tx=<id> opens the summary drawer for that transaction
+  const { data: deepLinkTx } = api.transaction.getTransaction.useQuery(
+    { id: deepLinkTxId! },
+    { enabled: !!deepLinkTxId },
+  );
+
+  useEffect(() => {
+    if (!deepLinkTxId || !deepLinkTx || deepLinkHandled.current) return;
+    deepLinkHandled.current = true;
+    // Don't clobber a drawer the user opened while the deep-link fetch was in flight
+    setActionTx((prev) => prev ?? transformTransaction(deepLinkTx));
+    // Clean the URL so refresh/back doesn't re-open the drawer
+    window.history.replaceState(null, "", "/transactions");
+  }, [deepLinkTxId, deepLinkTx]);
 
   const { data, isLoading: isLoadingTransactions } = api.transaction.getTransactions.useQuery(
     { workspaceId, month, year },
@@ -97,34 +169,7 @@ export default function TransactionsPage() {
   const allTransactions = data?.transactions ?? [];
 
   // Transform API transactions to TransactionRow format
-  const transformedTransactions = allTransactions.map((tx) => {
-    const amount = Math.abs(parseFloat(tx.amount));
-    let type: "income" | "expense" | "transfer_debit" | "transfer_credit";
-
-    if (tx.type === "transfer") {
-      type = parseFloat(tx.amount) < 0 ? "transfer_debit" : "transfer_credit";
-    } else {
-      type = tx.type;
-    }
-
-    return {
-      id: tx.id,
-      name: tx.name,
-      category:
-        tx.category?.name ?? (tx.type === "transfer" ? "Transfer" : "Lainnya"),
-      categoryIcon: tx.category?.icon,
-      categoryColor: tx.category?.color,
-      date: formatTransactionDate(tx.date),
-      rawDate: new Date(tx.date),
-      amount,
-      feeAmount: (tx as { feeAmount?: number }).feeAmount,
-      type,
-      walletContext: getWalletContext(tx.type, tx.wallet, tx.toWallet),
-      authorName: tx.createdBy?.name,
-      createdBy: tx.createdBy,
-      raw: tx,
-    };
-  });
+  const transformedTransactions = allTransactions.map(transformTransaction);
 
   // Group by date
   const grouped = transformedTransactions.reduce<
@@ -294,5 +339,13 @@ export default function TransactionsPage() {
         initialData={editTx}
       />
     </>
+  );
+}
+
+export default function TransactionsPage() {
+  return (
+    <React.Suspense>
+      <TransactionsPageContent />
+    </React.Suspense>
   );
 }

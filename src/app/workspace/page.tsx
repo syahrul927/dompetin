@@ -10,7 +10,8 @@ import { MemberList } from "@/components/workspace/MemberList";
 import { CreateWorkspaceDrawer } from "@/components/workspace/CreateWorkspaceDrawer";
 import { InviteMemberDrawer } from "@/components/workspace/InviteMemberDrawer";
 import { Button } from "@/components/ui/button";
-import { Plus, UserPlus } from "lucide-react";
+import { Plus, UserPlus, Webhook } from "lucide-react";
+import Link from "next/link";
 
 import { useActiveWorkspace } from "@/components/providers/workspace-provider";
 import { useAnalytics } from "@/hooks/use-analytics";
@@ -148,6 +149,18 @@ export default function WorkspacePage() {
             )}
           </div>
         )}
+
+        {/* Integrations */}
+        <div>
+          <SectionHeader title="Integrasi" />
+          <Link
+            href="/workspace/integrations"
+            className="flex h-14 w-full items-center gap-3 rounded-[20px] border border-primary/40 border-dashed bg-card px-4 text-sm font-semibold text-primary transition-colors hover:bg-primary/5"
+          >
+            <Webhook size={18} />
+            Integrasi Webhook
+          </Link>
+        </div>
       </div>
 
       {/* Drawers */}

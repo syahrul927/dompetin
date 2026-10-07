@@ -10,6 +10,7 @@ import { budgetRouter } from "./routers/budget";
 import { goalRouter } from "./routers/goal";
 import { aiRouter } from "./routers/ai";
 import { splitBillRouter } from "./routers/split-bill";
+import { webhookRouter } from "./routers/webhook";
 
 /**
  * This is the primary router for your server.
@@ -76,6 +77,11 @@ export const appRouter = createTRPCRouter({
    * Split bill router
    */
   splitBill: splitBillRouter,
+
+  /**
+   * Webhook integration router
+   */
+  webhook: webhookRouter,
 });
 
 // export type definition of API

@@ -43,6 +43,20 @@
       "when": 1772728388373,
       "tag": "0005_fair_cargill",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791306374932,
+      "tag": "0006_powerful_shriek",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791308942842,
+      "tag": "0007_cute_bloodscream",
+      "breakpoints": true
     }
   ]
 }

@@ -277,7 +277,7 @@ export const transactionRouter = {
         id: z.string().uuid(),
       }),
     )
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const transactionData = await db.query.transaction.findFirst({
         where: eq(transaction.id, input.id),
         with: {
@@ -313,6 +313,18 @@ export const transactionRouter = {
 
       if (!transactionData) {
         throw new Error("Transaction not found");
+      }
+
+      // Verify the caller is a member of the transaction's workspace
+      const member = await db.query.workspaceMember.findFirst({
+        where: and(
+          eq(workspaceMember.workspaceId, transactionData.workspaceId),
+          eq(workspaceMember.userId, ctx.session.user.id),
+        ),
+      });
+
+      if (!member) {
+        throw new Error("Access denied to this workspace");
       }
 
       return transactionData;
